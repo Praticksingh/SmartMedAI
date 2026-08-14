@@ -183,19 +183,74 @@ export const mockSignUp = (payload: SignUpPayload): { user: MockUser; profile: M
   return { user: newUser, profile: newProfile };
 };
 
+// Lockout tracker for security rule: 3 failed attempts = block login
+interface LockoutData {
+  count: number;
+  lockUntil: number;
+}
+
+const getLockoutDB = (): Record<string, LockoutData> => {
+  try {
+    return JSON.parse(localStorage.getItem("opdflow_login_lockouts") ?? "{}");
+  } catch {
+    return {};
+  }
+};
+
+const saveLockoutDB = (db: Record<string, LockoutData>) => {
+  localStorage.setItem("opdflow_login_lockouts", JSON.stringify(db));
+};
+
 export const mockSignIn = (
   email: string,
   password: string
 ): { user: MockUser; profile: MockProfile | null } | { error: string } => {
   const db = readAuthDB();
   const lowerEmail = email.toLowerCase();
+  const lockouts = getLockoutDB();
+  const userLock = lockouts[lowerEmail];
+
+  // Check if user is currently locked out
+  if (userLock && userLock.lockUntil > Date.now()) {
+    const remainingMins = Math.ceil((userLock.lockUntil - Date.now()) / (60 * 1000));
+    return {
+      error: `ACCOUNT BLOCKED: Maximum limit of 3 failed login attempts reached. Dashboard access is locked for ${remainingMins} minute(s) for security compliance.`
+    };
+  }
 
   const user = db.users.find(u => u.email === lowerEmail);
-  if (!user) return { error: "No account found with this email address." };
+  if (!user) {
+    // Record failed attempt for invalid email as well
+    const currentCount = (userLock?.count ?? 0) + 1;
+    if (currentCount >= 3) {
+      lockouts[lowerEmail] = { count: currentCount, lockUntil: Date.now() + 15 * 60 * 1000 };
+      saveLockoutDB(lockouts);
+      return {
+        error: "ACCOUNT BLOCKED: Maximum limit of 3 failed login attempts reached. Dashboard access is locked for 15 minutes."
+      };
+    }
+    lockouts[lowerEmail] = { count: currentCount, lockUntil: 0 };
+    saveLockoutDB(lockouts);
+    return { error: `Invalid credentials. Failed attempt ${currentCount} of 3. Reaching 3 failed attempts will block login.` };
+  }
 
   if (db.passwords[lowerEmail] !== password) {
-    return { error: "Incorrect password. Please try again." };
+    const currentCount = (userLock?.count ?? 0) + 1;
+    if (currentCount >= 3) {
+      lockouts[lowerEmail] = { count: currentCount, lockUntil: Date.now() + 15 * 60 * 1000 };
+      saveLockoutDB(lockouts);
+      return {
+        error: "ACCOUNT BLOCKED: Maximum limit of 3 failed login attempts reached. Dashboard access is locked for 15 minutes."
+      };
+    }
+    lockouts[lowerEmail] = { count: currentCount, lockUntil: 0 };
+    saveLockoutDB(lockouts);
+    return { error: `Incorrect password. Failed attempt ${currentCount} of 3. 3 failed attempts will block access to all dashboards.` };
   }
+
+  // Clear failed login attempts on success
+  delete lockouts[lowerEmail];
+  saveLockoutDB(lockouts);
 
   const profile = db.profiles.find(p => p.userId === user.id) ?? null;
   db.sessions = { userId: user.id, token: `tok_${Math.random().toString(36).slice(2)}` };

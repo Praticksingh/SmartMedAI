@@ -10,18 +10,18 @@ export const Badge: React.FC<BadgeProps> = ({
   variant = "neutral",
   ...props
 }) => {
-  const baseStyles = "inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full border tracking-wide";
+  const baseStyles = "inline-flex items-center px-3 py-1 text-xs font-mono font-bold rounded-full border tracking-wider uppercase shadow-xs";
 
   const variants = {
-    primary: "bg-primary-50 text-primary-800 border-primary-200",
-    secondary: "bg-secondary-50 text-secondary-800 border-secondary-200",
-    neutral: "bg-slate-50 text-slate-700 border-slate-200",
-    p1: "bg-triage-p1-bg text-triage-p1-text border-triage-p1-border",
-    p2: "bg-triage-p2-bg text-triage-p2-text border-triage-p2-border",
-    p3: "bg-triage-p3-bg text-triage-p3-text border-triage-p3-border",
-    p4: "bg-triage-p4-bg text-triage-p4-text border-triage-p4-border",
-    success: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    info: "bg-sky-50 text-sky-800 border-sky-200",
+    primary: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-glow-cyan",
+    secondary: "bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-glow-teal",
+    neutral: "bg-slate-800/80 text-slate-300 border-slate-700",
+    p1: "bg-rose-500/25 text-rose-300 border-rose-500/50 shadow-glow-rose font-black",
+    p2: "bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-glow-amber font-bold",
+    p3: "bg-yellow-500/20 text-yellow-300 border-yellow-500/40 font-semibold",
+    p4: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-semibold",
+    success: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold",
+    info: "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold",
   };
 
   return (
