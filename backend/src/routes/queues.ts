@@ -12,7 +12,7 @@ export const queueRouter = Router();
 
 queueRouter.use(requireAuth);
 
-queueRouter.get("/dashboard", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR"]), async (_req, res) => {
+queueRouter.get("/dashboard", requireRole(["RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "DEPARTMENT_STAFF"]), async (_req, res) => {
   try {
     const queues = await prisma.queueEntry.findMany({
       where: { status: { in: ["WAITING", "CALLED"] } },
@@ -44,7 +44,7 @@ queueRouter.get("/dashboard", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR"]), 
   }
 });
 
-queueRouter.get("/live", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR", "PATIENT"]), async (_req, res) => {
+queueRouter.get("/live", requireRole(["RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "DEPARTMENT_STAFF", "PATIENT"]), async (_req, res) => {
   try {
     const queues = await prisma.queueEntry.findMany({
       where: { status: { in: ["WAITING", "CALLED"] } },
@@ -78,7 +78,7 @@ queueRouter.get("/live", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR", "PATIEN
   }
 });
 
-queueRouter.post("/checkin", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR"]), async (req: AuthenticatedRequest, res) => {
+queueRouter.post("/checkin", requireRole(["RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "DEPARTMENT_STAFF"]), async (req: AuthenticatedRequest, res) => {
   try {
     const { visitId } = z.object({ visitId: z.string() }).parse(req.body);
 
@@ -98,20 +98,23 @@ queueRouter.post("/checkin", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR"]), a
       return;
     }
 
-    const maxPosition = await prisma.queueEntry.findFirst({
-      orderBy: { position: "desc" },
-      select: { position: true },
-    });
-
-    const queueEntry = await prisma.queueEntry.create({
-      data: {
-        visitId,
-        departmentId: visit.departmentId,
-        priority: visit.priority,
-        position: (maxPosition?.position ?? 0) + 1,
-        status: "WAITING",
-      },
-      include: { visit: true, department: true },
+    const queueEntry = await prisma.$transaction(async (tx) => {
+      const lastEntry = await tx.queueEntry.findFirst({
+        where: { departmentId: visit.departmentId, status: { in: ["WAITING", "CALLED"] } },
+        orderBy: { position: "desc" },
+        select: { position: true },
+      });
+      const nextPosition = (lastEntry?.position ?? 0) + 1;
+      return tx.queueEntry.create({
+        data: {
+          visitId,
+          departmentId: visit.departmentId,
+          priority: visit.priority,
+          position: nextPosition,
+          status: "WAITING",
+        },
+        include: { visit: true, department: true },
+      });
     });
 
     const summary = await getQueueSummary();
@@ -127,7 +130,7 @@ queueRouter.post("/checkin", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR"]), a
   }
 });
 
-queueRouter.get("/:queueId", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR", "PATIENT"]), async (req, res) => {
+queueRouter.get("/:queueId", requireRole(["RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "DEPARTMENT_STAFF", "PATIENT"]), async (req, res) => {
   try {
     const queueId = Array.isArray(req.params.queueId) ? req.params.queueId[0] : req.params.queueId;
     const queueEntry = await prisma.queueEntry.findUnique({
@@ -158,7 +161,7 @@ queueRouter.get("/:queueId", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR", "PA
   }
 });
 
-queueRouter.patch("/:queueId/status", requireRole(["RECEPTIONIST", "ADMIN", "DOCTOR"]), async (req, res) => {
+queueRouter.patch("/:queueId/status", requireRole(["RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "DEPARTMENT_STAFF"]), async (req, res) => {
   const parsed = statusUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({

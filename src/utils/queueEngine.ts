@@ -110,22 +110,33 @@ export const checkQueueAging = (
   const threshold = STARVATION_THRESHOLDS_MIN[priority];
   if (!submittedAt) return { isAging: false, waitedMinutes: 0, threshold };
 
-  // Parse "HH:MM" timestamp against current time
-  const [hours, minutes] = submittedAt.split(":").map(Number);
-  if (isNaN(hours) || isNaN(minutes)) {
+  const now = Date.now();
+  let subTimeMs: number | null = null;
+
+  // Check if it's a valid ISO or epoch timestamp
+  const parsedTime = Date.parse(submittedAt);
+  if (!isNaN(parsedTime) && submittedAt.includes("T")) {
+    subTimeMs = parsedTime;
+  } else {
+    // Legacy fallback: parse "HH:MM"
+    const parts = submittedAt.trim().split(":");
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    if (!isNaN(hours) && !isNaN(minutes)) {
+      const subDate = new Date();
+      subDate.setHours(hours, minutes, 0, 0);
+      if (subDate.getTime() > now) {
+        subDate.setDate(subDate.getDate() - 1);
+      }
+      subTimeMs = subDate.getTime();
+    }
+  }
+
+  if (subTimeMs === null) {
     return { isAging: false, waitedMinutes: 0, threshold };
   }
 
-  const now = new Date();
-  const subTime = new Date();
-  subTime.setHours(hours, minutes, 0, 0);
-
-  // Handle midnight rollover edge case
-  if (subTime.getTime() > now.getTime()) {
-    subTime.setDate(subTime.getDate() - 1);
-  }
-
-  const diffMs = now.getTime() - subTime.getTime();
+  const diffMs = Math.max(0, now - subTimeMs);
   const waitedMinutes = Math.floor(diffMs / (1000 * 60));
 
   return {
@@ -133,4 +144,13 @@ export const checkQueueAging = (
     waitedMinutes,
     threshold,
   };
+};
+
+export const formatSubmittedTime = (submittedAt: string): string => {
+  if (!submittedAt) return "—";
+  const parsed = Date.parse(submittedAt);
+  if (!isNaN(parsed) && submittedAt.includes("T")) {
+    return new Date(parsed).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  return submittedAt;
 };

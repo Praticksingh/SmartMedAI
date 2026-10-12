@@ -6,7 +6,7 @@ import { prisma } from "../db.js";
 
 const appointmentSchema = z.object({
   doctorId: z.string().min(1),
-  appointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
+  appointmentDate: z.string().datetime({ offset: true }).or(z.string().datetime()),
   consultationType: z.enum(["IN_PERSON", "ONLINE_VIDEO", "ONLINE_CHAT"]),
   reason: z.string().optional(),
 });

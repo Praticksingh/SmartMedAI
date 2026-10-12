@@ -50,7 +50,11 @@ const ROLE_DASHBOARD: Record<UserRole, string> = {
   PATIENT: "/patient",
   DEPARTMENT_STAFF: "/staff",
   DOCTOR: "/staff",
+  RECEPTIONIST: "/staff",
+  LAB_STAFF: "/staff",
+  PHARMACIST: "/staff",
   HOSPITAL_ADMIN: "/admin",
+  ADMIN: "/admin",
 };
 
 export const LoginPage: React.FC = () => {
@@ -109,47 +113,47 @@ export const LoginPage: React.FC = () => {
   };
 
   const tab = TAB_CONFIG[activeTab];
-  const isLocked = error.includes("ACCOUNT BLOCKED") || error.includes("Maximum limit");
+  const isLocked = error.toLowerCase().includes("blocked") || error.toLowerCase().includes("locked") || error.toLowerCase().includes("maximum limit");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#080C14] p-4 text-slate-100 font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-sky-50/50 to-teal-50/30 p-4 text-slate-800 font-sans">
       <div className="fixed inset-0 overflow-hidden pointer-events-none select-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-sky-200/40 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-teal-200/30 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md z-10">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex flex-col items-center gap-2 group">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-cyan flex items-center justify-center shadow-glow-cyan group-hover:scale-105 transition-transform duration-200">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-sky-600 via-blue-600 to-teal-500 flex items-center justify-center shadow-lg shadow-sky-500/25 group-hover:scale-105 transition-transform duration-200">
               <Sparkles className="h-8 w-8 text-white animate-spin-slow" />
             </div>
             <div>
-              <span className="block text-2xl font-black text-white tracking-tight">
-                Nova<span className="text-gradient-cyan">Health</span> AI Command
+              <span className="block text-2xl font-black text-slate-900 tracking-tight">
+                SmartMed<span className="text-gradient-cyan">AI</span> Command
               </span>
-              <span className="block text-xs text-cyan-400 font-mono tracking-widest uppercase">
-                3-Attempt Security Lock Engine Enabled
+              <span className="block text-xs text-sky-600 font-mono tracking-widest uppercase font-semibold">
+                Hospital Outpatient Management
               </span>
             </div>
           </Link>
         </div>
 
         {/* Card */}
-        <div className="med-card-glowing rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
+        <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-900/5">
           {/* Role Tabs */}
-          <div className="flex border-b border-slate-800 bg-[#0B0F17]">
+          <div className="flex border-b border-slate-200 bg-slate-50/70">
             {(Object.keys(TAB_CONFIG) as LoginTab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => handleTabSwitch(t)}
                 className={`
                   flex-1 flex items-center justify-center gap-1.5 py-3.5 text-xs font-mono font-bold uppercase tracking-wider
-                  transition-all duration-200 border-b-2
+                  transition-all duration-200 border-b-2 cursor-pointer
                   ${activeTab === t
-                    ? "border-cyan-400 text-cyan-300 bg-cyan-500/10"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                    ? "border-sky-600 text-sky-700 bg-white"
+                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60"
                   }
                 `}
               >
@@ -162,11 +166,11 @@ export const LoginPage: React.FC = () => {
           {/* Form */}
           <div className="p-8 space-y-6">
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">{tab.roleLabel}</h1>
-              <p className="text-xs text-slate-400 mt-1 font-medium">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">{tab.roleLabel}</h1>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
                 {tab.helperText}{" "}
                 {activeTab === "patient" && (
-                  <Link to="/register" className="text-cyan-400 font-bold hover:underline">
+                  <Link to="/register" className="text-sky-600 font-bold hover:underline">
                     Register here
                   </Link>
                 )}
@@ -174,21 +178,21 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Security Attempt Limit Info Badge */}
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-300 flex items-center justify-between">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <ShieldAlert className="h-4 w-4 text-cyan-400" />
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 flex items-center justify-between">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <ShieldAlert className="h-4 w-4 text-sky-600" />
                 SECURITY RULE:
               </span>
-              <span className="text-amber-400 font-bold">MAX 3 FAILED ATTEMPTS</span>
+              <span className="text-amber-700 font-bold">MAX 3 FAILED ATTEMPTS</span>
             </div>
 
             {/* Demo account quick-fill */}
             <button
               type="button"
               onClick={fillDemo}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-xs font-mono font-bold hover:bg-cyan-500/20 transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-sky-300 bg-sky-50 text-sky-700 text-xs font-mono font-bold hover:bg-sky-100 transition-all cursor-pointer shadow-2xs"
             >
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+              <Sparkles className="h-3.5 w-3.5 text-sky-600" />
               Fill Demo Credentials
             </button>
 
@@ -220,7 +224,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-slate-400 hover:text-slate-200 transition-colors focus:outline-none"
+                      className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -231,7 +235,7 @@ export const LoginPage: React.FC = () => {
                   <div className="flex justify-end mt-1.5">
                     <Link
                       to="/forgot-password"
-                      className="text-xs text-cyan-400 font-semibold hover:underline font-mono"
+                      className="text-xs text-sky-600 font-semibold hover:underline font-mono"
                     >
                       Forgot password?
                     </Link>
@@ -241,12 +245,12 @@ export const LoginPage: React.FC = () => {
 
               {/* Error / Lockout Banner */}
               {error && (
-                <div className={`p-4 rounded-xl border text-xs font-mono font-medium flex items-start gap-2.5 shadow-lg ${
+                <div className={`p-4 rounded-xl border text-xs font-mono font-medium flex items-start gap-2.5 shadow-sm ${
                   isLocked 
-                    ? "bg-rose-950/80 border-rose-500/60 text-rose-200 shadow-glow-rose" 
-                    : "bg-amber-950/80 border-amber-500/60 text-amber-200 shadow-glow-amber"
+                    ? "bg-rose-50 border-rose-300 text-rose-800" 
+                    : "bg-amber-50 border-amber-300 text-amber-800"
                 }`}>
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
                   <div>
                     <span className="font-bold block uppercase">{isLocked ? "ACCESS BLOCKED — LOCKOUT ACTIVE" : "AUTHENTICATION WARNING"}</span>
                     <span className="leading-relaxed block mt-0.5">{error}</span>
@@ -254,22 +258,22 @@ export const LoginPage: React.FC = () => {
                 </div>
               )}
 
-              <Button type="submit" isLoading={isLoading} disabled={isLocked} className="w-full mt-2 shadow-glow-cyan">
+              <Button type="submit" isLoading={isLoading} disabled={isLocked} className="w-full mt-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white shadow-md shadow-sky-500/20 font-bold py-2.5">
                 <span>{isLocked ? "Account Locked" : "Sign In to Dashboard"}</span>
                 <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             </form>
           </div>
 
-          <div className="px-8 py-4 border-t border-slate-800 bg-[#0B0F17] text-center text-xs text-slate-400 font-mono">
-            <span className="font-bold text-slate-300">Demo Accounts:</span>{" "}
+          <div className="px-8 py-4 border-t border-slate-100 bg-slate-50 text-center text-xs text-slate-500 font-mono">
+            <span className="font-bold text-slate-700">Demo Accounts:</span>{" "}
             patient@demo.com · staff@demo.com · admin@demo.com{" "}
-            <span className="text-cyan-400">(demo1234)</span>
+            <span className="text-sky-700 font-bold">(demo1234)</span>
           </div>
         </div>
 
-        <p className="text-center mt-6 text-xs text-slate-400 font-mono">
-          <Link to="/" className="hover:text-cyan-400 transition-colors">← Back to Command Center</Link>
+        <p className="text-center mt-6 text-xs text-slate-500 font-mono">
+          <Link to="/" className="hover:text-sky-600 transition-colors">← Back to Command Center</Link>
         </p>
       </div>
     </div>

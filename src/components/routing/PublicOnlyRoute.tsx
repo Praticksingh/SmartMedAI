@@ -11,7 +11,11 @@ const roleDashboard: Record<UserRole, string> = {
   PATIENT: "/patient",
   DEPARTMENT_STAFF: "/staff",
   DOCTOR: "/staff",
+  RECEPTIONIST: "/staff",
+  LAB_STAFF: "/staff",
+  PHARMACIST: "/staff",
   HOSPITAL_ADMIN: "/admin",
+  ADMIN: "/admin",
 };
 
 /**

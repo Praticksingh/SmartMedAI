@@ -6,6 +6,7 @@
  */
 
 import { logEvent } from "./mockState";
+import { apiClient } from "../api/client";
 
 export interface OfflineAction {
   id: string;
@@ -49,22 +50,47 @@ export const enqueueOfflineAction = (type: OfflineAction["type"], payload: any) 
 /**
  * Flushes and syncs offline queue to main database state
  */
-export const flushOfflineQueue = (actorName: string = "Offline Sync Engine"): number => {
+export const flushOfflineQueue = async (actorName: string = "Offline Sync Engine"): Promise<number> => {
   const queue = readOfflineQueue();
   if (queue.length === 0) return 0;
 
   const count = queue.length;
+  const remaining: OfflineAction[] = [];
+
+  for (const action of queue) {
+    try {
+      if (typeof window !== "undefined" && window.location) {
+        switch (action.type) {
+          case "TRIAGE_SUBMIT":
+            if (action.payload?.visitId) {
+              await apiClient.queues.checkin(action.payload.visitId);
+            }
+            break;
+          case "STATUS_CHANGE":
+            if (action.payload?.id && action.payload?.status) {
+              await apiClient.queues.updateStatus(action.payload.id, action.payload.status);
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    } catch {
+      remaining.push(action);
+    }
+  }
+
+  // Update storage with un-synced items
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
 
   // Log compliance audit event for batch synchronization
   logEvent(
     actorName,
     "OFFLINE_SYNC_COMPLETED",
-    `Flushed and synchronized ${count} offline pending transaction(s) to primary database.`
+    `Flushed and synchronized ${count - remaining.length} of ${count} offline pending transaction(s).`
   );
 
-  // Clear queue
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-  return count;
+  return count - remaining.length;
 };
 
 /**

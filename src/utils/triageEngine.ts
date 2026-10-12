@@ -45,6 +45,8 @@ export interface TriageInput {
   isChild: boolean; // under 12
   isSenior: boolean; // over 65
   additionalContext: string; // free text
+  isDisasterSurgeActive?: boolean;
+  surgeReason?: string;
 }
 
 export interface TriageResult {
@@ -207,6 +209,12 @@ export const runTriageEngine = (input: TriageInput): TriageResult => {
   if (input.isChild)  { score += 4; reasoning.push("Paediatric patient — lower threshold for urgent triage."); }
   if (input.isSenior) { score += 3; reasoning.push("Senior patient — increased vulnerability, closer monitoring advised."); }
   if (input.isPregnant) { score += 5; reasoning.push("Patient is pregnant — obstetric risk assessment required."); }
+
+  // 5b. Hospital Disaster Surge Mode Emergency Override
+  if (input.isDisasterSurgeActive) {
+    score = Math.max(score, 35);
+    reasoning.unshift(`🚨 CODE DISASTER: Hospital Surge Protocol Active (${input.surgeReason || "Mass Casualty / Epidemic Alert"}). Intake auto-escalated to P1 Critical priority.`);
+  }
 
   // 6. Map score → priority
   let priority: TriagePriority;

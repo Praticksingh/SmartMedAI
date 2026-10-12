@@ -8,11 +8,11 @@ import { PublicOnlyRoute } from "./components/routing/PublicOnlyRoute";
 
 // Pages
 import { Landing } from "./pages/Landing";
-import { PatientPlaceholder } from "./pages/PatientPlaceholder";
+import { PatientDashboard } from "./pages/PatientDashboard";
 import { PatientTriage } from "./pages/PatientTriage";
-import { StaffPlaceholder } from "./pages/StaffPlaceholder";
-import { AdminPlaceholder } from "./pages/AdminPlaceholder";
-import { PublicDisplayPlaceholder } from "./pages/PublicDisplayPlaceholder";
+import { StaffStation } from "./pages/StaffStation";
+import { HospitalAdminCenter } from "./pages/HospitalAdminCenter";
+import { PublicWaitingDisplay } from "./pages/PublicWaitingDisplay";
 
 // Auth pages
 import { LoginPage } from "./pages/auth/LoginPage";
@@ -74,14 +74,14 @@ const App: React.FC = () => {
                   <Route path="/" element={<Landing />} />
 
                   {/* Public TV display — no auth required */}
-                  <Route path="/public-display" element={<PublicDisplayPlaceholder />} />
+                  <Route path="/public-display" element={<PublicWaitingDisplay />} />
 
                   {/* Patient area */}
                   <Route
                     path="/patient"
                     element={
                       <ProtectedRoute allowedRoles={["PATIENT"]}>
-                        <PatientPlaceholder />
+                        <PatientDashboard />
                       </ProtectedRoute>
                     }
                   />
@@ -100,8 +100,8 @@ const App: React.FC = () => {
                   <Route
                     path="/staff"
                     element={
-                      <ProtectedRoute allowedRoles={["DEPARTMENT_STAFF", "DOCTOR"]}>
-                        <StaffPlaceholder />
+                      <ProtectedRoute allowedRoles={["DEPARTMENT_STAFF", "DOCTOR", "RECEPTIONIST", "LAB_STAFF", "PHARMACIST"]}>
+                        <StaffStation />
                       </ProtectedRoute>
                     }
                   />
@@ -110,8 +110,8 @@ const App: React.FC = () => {
                   <Route
                     path="/admin"
                     element={
-                      <ProtectedRoute allowedRoles={["HOSPITAL_ADMIN"]}>
-                        <AdminPlaceholder />
+                      <ProtectedRoute allowedRoles={["HOSPITAL_ADMIN", "ADMIN"]}>
+                        <HospitalAdminCenter />
                       </ProtectedRoute>
                     }
                   />

@@ -2,7 +2,15 @@
 // Backed by localStorage — works fully offline without Supabase credentials.
 // Schema version tracked to handle future migrations cleanly.
 
-export type UserRole = "PATIENT" | "DEPARTMENT_STAFF" | "DOCTOR" | "HOSPITAL_ADMIN";
+export type UserRole =
+  | "PATIENT"
+  | "DOCTOR"
+  | "DEPARTMENT_STAFF"
+  | "RECEPTIONIST"
+  | "LAB_STAFF"
+  | "PHARMACIST"
+  | "HOSPITAL_ADMIN"
+  | "ADMIN";
 
 export interface MockUser {
   id: string;
@@ -70,6 +78,15 @@ const SEED_PROFILES: MockProfile[] = [
 ];
 
 // Consolidated seed passwords (passwords stored in DB — demo only, never production)
+const hashPw = (pw: string): string => {
+  let hash = 0;
+  for (let i = 0; i < pw.length; i++) {
+    hash = (hash << 5) - hash + pw.charCodeAt(i);
+    hash |= 0;
+  }
+  return `h_${Math.abs(hash).toString(16)}`;
+};
+
 const SEED_PASSWORDS: Record<string, string> = {
   "patient@demo.com": "demo1234",
   "staff@demo.com":   "demo1234",
@@ -173,8 +190,8 @@ export const mockSignUp = (payload: SignUpPayload): { user: MockUser; profile: M
     isProfileComplete: !!(payload.fullName && payload.dateOfBirth && payload.gender && payload.phone),
   };
 
-  // Store password in consolidated DB (not separate key)
-  db.passwords[payload.email.toLowerCase()] = payload.password;
+  // Store hashed password in consolidated DB (never raw plaintext)
+  db.passwords[payload.email.toLowerCase()] = hashPw(payload.password);
   db.users.push(newUser);
   db.profiles.push(newProfile);
   db.sessions = { userId, token: `tok_${Math.random().toString(36).slice(2)}` };
@@ -210,42 +227,29 @@ export const mockSignIn = (
   const lockouts = getLockoutDB();
   const userLock = lockouts[lowerEmail];
 
-  // Check if user is currently locked out
-  if (userLock && userLock.lockUntil > Date.now()) {
-    const remainingMins = Math.ceil((userLock.lockUntil - Date.now()) / (60 * 1000));
-    return {
-      error: `ACCOUNT BLOCKED: Maximum limit of 3 failed login attempts reached. Dashboard access is locked for ${remainingMins} minute(s) for security compliance.`
-    };
+  const now = Date.now();
+  if (userLock && userLock.lockUntil > now) {
+    const minsLeft = Math.ceil((userLock.lockUntil - now) / 60000);
+    return { error: `Account locked due to 3 failed attempts. Try again in ${minsLeft} minute(s).` };
   }
 
   const user = db.users.find(u => u.email === lowerEmail);
-  if (!user) {
-    // Record failed attempt for invalid email as well
-    const currentCount = (userLock?.count ?? 0) + 1;
-    if (currentCount >= 3) {
-      lockouts[lowerEmail] = { count: currentCount, lockUntil: Date.now() + 15 * 60 * 1000 };
-      saveLockoutDB(lockouts);
-      return {
-        error: "ACCOUNT BLOCKED: Maximum limit of 3 failed login attempts reached. Dashboard access is locked for 15 minutes."
-      };
-    }
-    lockouts[lowerEmail] = { count: currentCount, lockUntil: 0 };
-    saveLockoutDB(lockouts);
-    return { error: `Invalid credentials. Failed attempt ${currentCount} of 3. Reaching 3 failed attempts will block login.` };
-  }
+  const storedPw = db.passwords[lowerEmail];
+  const isValid = user && storedPw && (storedPw === password || storedPw === hashPw(password));
 
-  if (db.passwords[lowerEmail] !== password) {
-    const currentCount = (userLock?.count ?? 0) + 1;
-    if (currentCount >= 3) {
-      lockouts[lowerEmail] = { count: currentCount, lockUntil: Date.now() + 15 * 60 * 1000 };
+  if (!isValid) {
+    const newCount = (userLock?.count ?? 0) + 1;
+    if (newCount >= 3) {
+      lockouts[lowerEmail] = { count: 3, lockUntil: now + 15 * 60 * 1000 };
       saveLockoutDB(lockouts);
       return {
         error: "ACCOUNT BLOCKED: Maximum limit of 3 failed login attempts reached. Dashboard access is locked for 15 minutes."
       };
+    } else {
+      lockouts[lowerEmail] = { count: newCount, lockUntil: 0 };
+      saveLockoutDB(lockouts);
+      return { error: `Invalid credentials. Failed attempt ${newCount} of 3. Reaching 3 failed attempts will block login.` };
     }
-    lockouts[lowerEmail] = { count: currentCount, lockUntil: 0 };
-    saveLockoutDB(lockouts);
-    return { error: `Incorrect password. Failed attempt ${currentCount} of 3. 3 failed attempts will block access to all dashboards.` };
   }
 
   // Clear failed login attempts on success

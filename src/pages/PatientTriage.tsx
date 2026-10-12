@@ -23,6 +23,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { addPatientVisit } from "../utils/mockState";
+import { readEmergencyState } from "../utils/emergencyEngine";
 import { 
   speakTriageQuestion, 
   LANGUAGE_OPTIONS, 
@@ -65,8 +66,8 @@ export const PatientTriage: React.FC = () => {
   const patientName = profile?.fullName ?? user?.email?.split("@")[0] ?? "Guest";
 
   // Sync internal triage wizard lang state with centralized LanguageContext
-  const lang: LanguageCode = language === "hi" ? "HI" : "EN";
-  const setLang = (l: LanguageCode) => setLanguage(l === "HI" ? "hi" : "en");
+  const lang: LanguageCode = language === "hi" ? "HI" : language === "bn" ? "BN" : "EN";
+  const setLang = (l: LanguageCode) => setLanguage(l === "HI" ? "hi" : l === "BN" ? "bn" : "en");
   const [step, setStep] = useState(0);
   const [selectedSystem, setSelectedSystem] = useState<BodySystem | null>(null);
   const [selectedSymptomIds, setSelectedSymptomIds] = useState<string[]>([]);
@@ -114,6 +115,7 @@ export const PatientTriage: React.FC = () => {
   };
 
   const runAnalysis = () => {
+    const emergencyState = readEmergencyState();
     const input: TriageInput = {
       symptoms: selectedSymptomIds,
       severity,
@@ -126,6 +128,8 @@ export const PatientTriage: React.FC = () => {
       isChild,
       isSenior,
       additionalContext,
+      isDisasterSurgeActive: emergencyState.isDisasterSurgeActive,
+      surgeReason: emergencyState.surgeReason,
     };
     const result = runTriageEngine(input);
     setTriageResult(result);

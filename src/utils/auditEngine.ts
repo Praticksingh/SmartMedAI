@@ -84,14 +84,16 @@ export const exportAuditLogsCSV = (logs: AuditLog[]) => {
     return [log.time, escapedActor, log.action, meta.label, escapedDesc].join(",");
   });
 
-  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-  const encodedUri = encodeURI(csvContent);
+  const csvContent = [headers.join(","), ...rows].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `opdflow_audit_compliance_report_${Date.now()}.csv`);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `smartmed_audit_compliance_report_${Date.now()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -103,11 +105,14 @@ export const exportAuditLogsJSON = (logs: AuditLog[]) => {
     categoryMeta: getEventCategory(log.action),
   }));
 
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formattedLogs, null, 2));
+  const jsonStr = JSON.stringify(formattedLogs, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", dataStr);
-  link.setAttribute("download", `opdflow_audit_logs_${Date.now()}.json`);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `smartmed_audit_logs_${Date.now()}.json`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };

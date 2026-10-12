@@ -31,15 +31,21 @@ export interface QRScanResult {
  */
 
 const computeChecksum = (token: string, ref: string, dept: string): string => {
-  const secret = "OPDFLOW_SECRET_2026";
+  const secret = "SMARTMED_SECURE_HMAC_KEY_2026";
   const raw = `${token}:${ref}:${dept}:${secret}`;
-  let hash = 0;
+  // FNV-1a 64-bit mix + rotation for robust client-side verification checksum
+  let h1 = 0x811c9dc5;
+  let h2 = 0x19660d;
   for (let i = 0; i < raw.length; i++) {
-    const char = raw.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
+    const ch = raw.charCodeAt(i);
+    h1 ^= ch;
+    h1 = Math.imul(h1, 16777619);
+    h2 ^= ch;
+    h2 = Math.imul(h2, 2246822507);
   }
-  return Math.abs(hash).toString(36).toUpperCase();
+  const hex1 = (h1 >>> 0).toString(16).padStart(8, "0");
+  const hex2 = (h2 >>> 0).toString(16).padStart(8, "0");
+  return `${hex1}-${hex2}`.toUpperCase();
 };
 
 /**
@@ -61,34 +67,24 @@ export const generateQRPayload = (visit: PatientVisit): string => {
  * Parses and verifies a scanned QR string payload
  */
 export const parseQRPayload = (qrString: string): { valid: boolean; payload?: QRPayload; error?: string } => {
+  if (!qrString || typeof qrString !== "string") {
+    return { valid: false, error: "Empty or invalid QR code input." };
+  }
+
   try {
-    const payload: QRPayload = JSON.parse(qrString);
+    const payload: QRPayload = JSON.parse(qrString.trim());
     if (!payload.token || !payload.ref || !payload.dept || !payload.sig) {
-      return { valid: false, error: "Invalid QR code format or missing required fields." };
+      return { valid: false, error: "Invalid QR pass: missing required digital signature fields." };
     }
 
     const expectedSig = computeChecksum(payload.token, payload.ref, payload.dept);
     if (payload.sig !== expectedSig) {
-      return { valid: false, error: "QR code signature verification failed. Token may be forged." };
+      return { valid: false, error: "Digital signature verification failed. Token pass may be forged or tampered." };
     }
 
     return { valid: true, payload };
   } catch {
-    // If raw token string was scanned directly (e.g. "C-028")
-    if (typeof qrString === "string" && qrString.includes("-")) {
-      return {
-        valid: true,
-        payload: {
-          v: 1,
-          token: qrString.trim().toUpperCase(),
-          ref: "legacy_ref",
-          dept: qrString.split("-")[0],
-          ts: Date.now(),
-          sig: "LEGACY",
-        },
-      };
-    }
-    return { valid: false, error: "Failed to parse QR data string." };
+    return { valid: false, error: "Failed to parse QR code. Scanner requires a signed SmartMed AI digital pass." };
   }
 };
 

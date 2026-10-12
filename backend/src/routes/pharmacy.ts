@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { prisma } from "../db.js";
 
 const medicineSchema = z.object({
   name: z.string().min(1),
@@ -39,11 +40,31 @@ export const pharmacyRouter = Router();
 
 pharmacyRouter.use(requireAuth);
 
-pharmacyRouter.get("/inventory", requireRole(["PHARMACIST", "ADMIN", "DOCTOR"]), (_req, res) => {
+pharmacyRouter.get("/inventory", requireRole(["PHARMACIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR"]), async (_req, res) => {
+  try {
+    const dbMeds = await prisma.medicine.findMany({ orderBy: { name: "asc" } });
+    if (dbMeds.length > 0) {
+      res.json({
+        inventory: dbMeds.map((m) => ({
+          id: m.id,
+          name: m.name,
+          category: m.genericName || "General",
+          stock: m.quantity,
+          expiryDate: m.expiryDate.toISOString().slice(0, 10),
+          price: m.unitPrice,
+          status: m.quantity === 0 ? "OUT_OF_STOCK" : m.quantity < 10 ? "LOW_STOCK" : "IN_STOCK",
+        })),
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
   res.json({ inventory });
 });
 
-pharmacyRouter.post("/inventory", requireRole(["PHARMACIST", "ADMIN"]), (req, res) => {
+pharmacyRouter.post("/inventory", requireRole(["PHARMACIST", "ADMIN", "HOSPITAL_ADMIN"]), async (req, res) => {
   const parsed = medicineSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -56,8 +77,27 @@ pharmacyRouter.post("/inventory", requireRole(["PHARMACIST", "ADMIN"]), (req, re
     return;
   }
 
+  const medId = `med_${Date.now()}`;
+  try {
+    await prisma.medicine.create({
+      data: {
+        id: medId,
+        name: parsed.data.name,
+        dosage: "Standard",
+        genericName: parsed.data.category,
+        unitPrice: parsed.data.price,
+        quantity: parsed.data.stock,
+        expiryDate: new Date(parsed.data.expiryDate),
+        purchaseDate: new Date(),
+        status: parsed.data.stock === 0 ? "DISCONTINUED" : "ACTIVE",
+      },
+    });
+  } catch {
+    // fallback
+  }
+
   const medicine: PharmacyItem = {
-    id: `med_${Date.now()}`,
+    id: medId,
     name: parsed.data.name,
     category: parsed.data.category,
     stock: parsed.data.stock,
@@ -70,7 +110,7 @@ pharmacyRouter.post("/inventory", requireRole(["PHARMACIST", "ADMIN"]), (req, re
   res.status(201).json({ medicine });
 });
 
-pharmacyRouter.post("/fulfill", requireRole(["PHARMACIST", "ADMIN"]), (req, res) => {
+pharmacyRouter.post("/fulfill", requireRole(["PHARMACIST", "ADMIN", "HOSPITAL_ADMIN"]), async (req, res) => {
   const parsed = fulfillmentSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -118,10 +158,10 @@ pharmacyRouter.post("/fulfill", requireRole(["PHARMACIST", "ADMIN"]), (req, res)
   };
 
   fulfillmentStore.push(fulfillment);
-  res.status(201).json({ fulfillment, inventory: inventory });
+  res.status(201).json({ fulfillment, inventory });
 });
 
-pharmacyRouter.get("/fulfillment", requireRole(["PHARMACIST", "ADMIN", "DOCTOR"]), (_req, res) => {
+pharmacyRouter.get("/fulfillment", requireRole(["PHARMACIST", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR"]), async (_req, res) => {
   res.json({ fulfillment: fulfillmentStore });
 });
 

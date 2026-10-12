@@ -12,7 +12,9 @@ export interface AuthenticatedRequest extends Request {
 
 export const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const cookieToken = req.cookies?.devfusion_access_token;
+  const token = bearerToken || cookieToken;
 
   if (!token) {
     res.status(401).json({

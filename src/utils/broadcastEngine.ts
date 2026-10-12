@@ -6,6 +6,7 @@
  */
 
 export interface TVBroadcastEvent {
+  eventId: string;
   type: "TOKEN_CALLED" | "QUEUE_PAUSED" | "QUEUE_RESUMED";
   tokenNumber: string;
   deptCode: string;
@@ -27,6 +28,21 @@ if (typeof window !== "undefined" && "BroadcastChannel" in window) {
   }
 }
 
+// In-memory deduplication cache with 30s TTL
+const recentEventCache = new Map<string, number>();
+
+const isDuplicateEvent = (eventId?: string, tokenNumber?: string, timestamp?: number): boolean => {
+  const now = Date.now();
+  // Clean up entries older than 30 seconds
+  for (const [id, time] of recentEventCache.entries()) {
+    if (now - time > 30000) recentEventCache.delete(id);
+  }
+  const key = eventId || `${tokenNumber}_${timestamp}`;
+  if (recentEventCache.has(key)) return true;
+  recentEventCache.set(key, now);
+  return false;
+};
+
 /**
  * Broadcasts a token call event to all open TV Display windows
  */
@@ -37,6 +53,7 @@ export const broadcastTokenCall = (
   room: string
 ) => {
   const eventPayload: TVBroadcastEvent = {
+    eventId: `call_${tokenNumber}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     type: "TOKEN_CALLED",
     tokenNumber,
     deptCode,
@@ -45,21 +62,44 @@ export const broadcastTokenCall = (
     timestamp: Date.now(),
   };
 
+  // Mark in local cache so sender window doesn't echo to itself
+  isDuplicateEvent(eventPayload.eventId, eventPayload.tokenNumber, eventPayload.timestamp);
+
   // 1. Post to BroadcastChannel if available
   if (channelInstance) {
     channelInstance.postMessage(eventPayload);
   }
 
   // 2. Write to localStorage for cross-tab storage event listeners
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(eventPayload));
-  } catch (e) {
-    console.error("Failed to store TV event in localStorage", e);
+  if (typeof localStorage !== "undefined" && typeof localStorage.setItem === "function") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(eventPayload));
+    } catch (e) {
+      console.error("Failed to store TV event in localStorage", e);
+    }
   }
 };
 
 /**
- * Subscribes to real-time TV broadcast events
+ * Retrieves the last broadcast event from storage if present
+ */
+export const getLastBroadcastEvent = (): TVBroadcastEvent | null => {
+  if (typeof localStorage === "undefined" || typeof localStorage.getItem !== "function") return null;
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Direct check for duplicate event id or token
+ */
+export const checkIsDuplicateEvent = isDuplicateEvent;
+
+/**
+ * Subscribes to real-time TV broadcast events with deduplication
  */
 export const subscribeToTVBroadcast = (
   callback: (event: TVBroadcastEvent) => void
@@ -67,7 +107,9 @@ export const subscribeToTVBroadcast = (
   // Listener for BroadcastChannel
   const handleMessage = (e: MessageEvent<TVBroadcastEvent>) => {
     if (e.data && e.data.type) {
-      callback(e.data);
+      if (!isDuplicateEvent(e.data.eventId, e.data.tokenNumber, e.data.timestamp)) {
+        callback(e.data);
+      }
     }
   };
 
@@ -80,20 +122,26 @@ export const subscribeToTVBroadcast = (
     if (e.key === LOCAL_STORAGE_KEY && e.newValue) {
       try {
         const payload: TVBroadcastEvent = JSON.parse(e.newValue);
-        callback(payload);
+        if (!isDuplicateEvent(payload.eventId, payload.tokenNumber, payload.timestamp)) {
+          callback(payload);
+        }
       } catch (err) {
         console.error("Failed to parse TV broadcast storage event", err);
       }
     }
   };
 
-  window.addEventListener("storage", handleStorage);
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("storage", handleStorage);
+  }
 
   return () => {
     if (channelInstance) {
       channelInstance.removeEventListener("message", handleMessage);
     }
-    window.removeEventListener("storage", handleStorage);
+    if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+      window.removeEventListener("storage", handleStorage);
+    }
   };
 };
 

@@ -3,7 +3,15 @@ import jwt from "jsonwebtoken";
 
 import { env } from "../config.js";
 
-export type AuthRole = "PATIENT" | "DOCTOR" | "RECEPTIONIST" | "LAB_STAFF" | "PHARMACIST" | "ADMIN";
+export type AuthRole =
+  | "PATIENT"
+  | "DOCTOR"
+  | "DEPARTMENT_STAFF"
+  | "RECEPTIONIST"
+  | "LAB_STAFF"
+  | "PHARMACIST"
+  | "HOSPITAL_ADMIN"
+  | "ADMIN";
 
 export interface AuthUser {
   id: string;

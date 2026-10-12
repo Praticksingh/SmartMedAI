@@ -79,6 +79,105 @@ const INITIAL_LOGS: AuditLog[] = [
   { time: "14:45", actor: "System AI", action: "TRIAGE_CREATED", desc: "Symptom assessment processed. Generated token P-045 (Recommended Pediatrics, P2 High)." }
 ];
 
+export const INITIAL_VISITS: PatientVisit[] = [
+  {
+    id: "v_c028",
+    patientName: "Rahul Verma",
+    departmentCode: "CARD",
+    priority: "p1",
+    priorityText: "P1 Critical",
+    tokenNumber: "C-028",
+    qrCodeReference: "qr_sec_c028_card",
+    status: "WAITING",
+    mainSymptom: "Acute Chest Pain / Radiating Arm Pain",
+    submittedAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_c031",
+    patientName: "Meera Nair",
+    departmentCode: "CARD",
+    priority: "p2",
+    priorityText: "P2 High",
+    tokenNumber: "C-031",
+    qrCodeReference: "qr_sec_c031_card",
+    status: "WAITING",
+    mainSymptom: "Tachycardia & Palpitations",
+    submittedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_c033",
+    patientName: "Vikram Singhania",
+    departmentCode: "CARD",
+    priority: "p3",
+    priorityText: "P3 Moderate",
+    tokenNumber: "C-033",
+    qrCodeReference: "qr_sec_c033_card",
+    status: "WAITING",
+    mainSymptom: "Leg Oedema / Swollen Feet",
+    submittedAt: new Date(Date.now() - 22 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_p045",
+    patientName: "Baby Aarohi (Guardian: Sunita)",
+    departmentCode: "PEDI",
+    priority: "p2",
+    priorityText: "P2 High",
+    tokenNumber: "P-045",
+    qrCodeReference: "qr_sec_p045_pedi",
+    status: "WAITING",
+    mainSymptom: "High Grade Febrile Illness (>39°C)",
+    submittedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_p048",
+    patientName: "Master Kabir (Guardian: Manoj)",
+    departmentCode: "PEDI",
+    priority: "p2",
+    priorityText: "P2 High",
+    tokenNumber: "P-048",
+    qrCodeReference: "qr_sec_p048_pedi",
+    status: "WAITING",
+    mainSymptom: "Persistent Wheezing & Cough",
+    submittedAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_p050",
+    patientName: "Baby Ishaan (Guardian: Priya)",
+    departmentCode: "PEDI",
+    priority: "p3",
+    priorityText: "P3 Moderate",
+    tokenNumber: "P-050",
+    qrCodeReference: "qr_sec_p050_pedi",
+    status: "WAITING",
+    mainSymptom: "Earache & Rhinorrhea",
+    submittedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_o021",
+    patientName: "Deepak Joshi",
+    departmentCode: "ORTHO",
+    priority: "p2",
+    priorityText: "P2 High",
+    tokenNumber: "O-021",
+    qrCodeReference: "qr_sec_o021_ortho",
+    status: "WAITING",
+    mainSymptom: "Acute Ankle Sprain / Suspected Fracture",
+    submittedAt: new Date(Date.now() - 7 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "v_o022",
+    patientName: "Sunita Deshmukh",
+    departmentCode: "ORTHO",
+    priority: "p3",
+    priorityText: "P3 Moderate",
+    tokenNumber: "O-022",
+    qrCodeReference: "qr_sec_o022_ortho",
+    status: "WAITING",
+    mainSymptom: "Lumbar Back Pain",
+    submittedAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+  },
+];
+
 interface MockDB {
   departments: DepartmentData[];
   auditLogs: AuditLog[];
@@ -93,7 +192,7 @@ export const readDB = (): MockDB => {
     const defaultDB = { 
       departments: INITIAL_DEPARTMENTS, 
       auditLogs: INITIAL_LOGS, 
-      activeVisits: [],
+      activeVisits: INITIAL_VISITS,
       staffMembers: INITIAL_STAFF 
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDB));
@@ -102,13 +201,17 @@ export const readDB = (): MockDB => {
   try {
     const parsed = JSON.parse(data);
     if (!parsed.staffMembers) parsed.staffMembers = INITIAL_STAFF;
+    if (!parsed.activeVisits || parsed.activeVisits.length === 0) {
+      parsed.activeVisits = INITIAL_VISITS;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    }
     return parsed;
   } catch (e) {
     console.error("Failed to parse mock DB", e);
     return { 
       departments: INITIAL_DEPARTMENTS, 
       auditLogs: INITIAL_LOGS, 
-      activeVisits: [],
+      activeVisits: INITIAL_VISITS,
       staffMembers: INITIAL_STAFF 
     };
   }
@@ -341,7 +444,7 @@ export const addPatientVisit = (
     qrCodeReference: `qr_sec_${Math.random().toString(36).slice(2, 10)}`,
     status: "WAITING",
     mainSymptom,
-    submittedAt: new Date().toLocaleTimeString().slice(0, 5)
+    submittedAt: new Date().toISOString()
   };
 
   db.departments = db.departments.map((d) => {

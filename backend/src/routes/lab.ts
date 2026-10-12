@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { prisma } from "../db.js";
 
 const labRequestSchema = z.object({
   patientId: z.string().min(1),
@@ -52,7 +53,7 @@ export const labRouter = Router();
 
 labRouter.use(requireAuth);
 
-labRouter.post("/requests", requireRole(["DOCTOR", "ADMIN", "LAB_STAFF"]), (req, res) => {
+labRouter.post("/requests", requireRole(["DOCTOR", "ADMIN", "HOSPITAL_ADMIN", "LAB_STAFF"]), async (req, res) => {
   const parsed = labRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -65,8 +66,39 @@ labRouter.post("/requests", requireRole(["DOCTOR", "ADMIN", "LAB_STAFF"]), (req,
     return;
   }
 
+  const requestId = `lab_${Date.now()}`;
+  const now = new Date().toISOString();
+
+  try {
+    let patient = await prisma.patientProfile.findUnique({ where: { id: parsed.data.patientId } });
+    if (!patient) {
+      patient = await prisma.patientProfile.findUnique({ where: { userId: parsed.data.patientId } });
+    }
+    let doctor = await prisma.doctorProfile.findUnique({ where: { id: parsed.data.doctorId } });
+    if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({ where: { userId: parsed.data.doctorId } });
+    }
+
+    if (patient && doctor) {
+      await prisma.labRequest.create({
+        data: {
+          id: requestId,
+          patientId: patient.id,
+          doctorId: doctor.id,
+          visitId: parsed.data.visitId,
+          testName: parsed.data.testName,
+          notes: parsed.data.notes,
+          priority: parsed.data.priority === "STAT" ? "P1_CRITICAL" : parsed.data.priority === "URGENT" ? "P2_HIGH" : "P4_ROUTINE",
+          status: "CREATED",
+        },
+      });
+    }
+  } catch {
+    // fallback
+  }
+
   const request: LabRequest = {
-    id: `lab_${Date.now()}`,
+    id: requestId,
     patientId: parsed.data.patientId,
     doctorId: parsed.data.doctorId,
     visitId: parsed.data.visitId,
@@ -74,20 +106,77 @@ labRouter.post("/requests", requireRole(["DOCTOR", "ADMIN", "LAB_STAFF"]), (req,
     priority: parsed.data.priority,
     status: "PENDING",
     notes: parsed.data.notes,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
   };
 
   labRequests.push(request);
   res.status(201).json({ request });
 });
 
-labRouter.get("/requests", requireRole(["DOCTOR", "ADMIN", "LAB_STAFF", "RECEPTIONIST"]), (_req, res) => {
+labRouter.get("/requests", requireRole(["DOCTOR", "ADMIN", "HOSPITAL_ADMIN", "LAB_STAFF", "RECEPTIONIST"]), async (_req, res) => {
+  try {
+    const dbRequests = await prisma.labRequest.findMany({
+      include: { patient: true, doctor: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (dbRequests.length > 0) {
+      res.json({
+        requests: dbRequests.map((r) => ({
+          id: r.id,
+          patientId: r.patientId,
+          doctorId: r.doctorId,
+          visitId: r.visitId || "",
+          testName: r.testName,
+          priority: r.priority.includes("P1") ? "STAT" : r.priority.includes("P2") ? "URGENT" : "ROUTINE",
+          status: r.status === "REPORTED" || r.status === "COMPLETED" ? "COMPLETED" : r.status === "PROCESSING" ? "IN_PROGRESS" : "PENDING",
+          notes: r.notes || "",
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+          resultSummary: r.notes || "",
+          fileUrl: r.reportUrl || undefined,
+        })),
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
   res.json({ requests: labRequests });
 });
 
-labRouter.get("/requests/:requestId", requireRole(["DOCTOR", "ADMIN", "LAB_STAFF", "PATIENT"]), (req, res) => {
-  const request = labRequests.find((entry) => entry.id === req.params.requestId);
+labRouter.get("/requests/:requestId", requireRole(["DOCTOR", "ADMIN", "HOSPITAL_ADMIN", "LAB_STAFF", "PATIENT"]), async (req, res) => {
+  const requestId = Array.isArray(req.params.requestId) ? req.params.requestId[0] : req.params.requestId;
+  try {
+    const r = await prisma.labRequest.findUnique({
+      where: { id: requestId },
+      include: { patient: true, doctor: true },
+    });
+    if (r) {
+      res.json({
+        request: {
+          id: r.id,
+          patientId: r.patientId,
+          doctorId: r.doctorId,
+          visitId: r.visitId || "",
+          testName: r.testName,
+          priority: r.priority.includes("P1") ? "STAT" : r.priority.includes("P2") ? "URGENT" : "ROUTINE",
+          status: r.status === "REPORTED" || r.status === "COMPLETED" ? "COMPLETED" : r.status === "PROCESSING" ? "IN_PROGRESS" : "PENDING",
+          notes: r.notes || "",
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+          resultSummary: r.notes || "",
+          fileUrl: r.reportUrl || undefined,
+        },
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  const request = labRequests.find((entry) => entry.id === requestId);
   if (!request) {
     res.status(404).json({
       error: {
@@ -102,7 +191,7 @@ labRouter.get("/requests/:requestId", requireRole(["DOCTOR", "ADMIN", "LAB_STAFF
   res.json({ request });
 });
 
-labRouter.patch("/requests/:requestId/report", requireRole(["LAB_STAFF", "ADMIN", "DOCTOR"]), (req, res) => {
+labRouter.patch("/requests/:requestId/report", requireRole(["LAB_STAFF", "ADMIN", "HOSPITAL_ADMIN", "DOCTOR"]), async (req, res) => {
   const parsed = reportUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -115,7 +204,21 @@ labRouter.patch("/requests/:requestId/report", requireRole(["LAB_STAFF", "ADMIN"
     return;
   }
 
-  const request = labRequests.find((entry) => entry.id === req.params.requestId);
+  const requestId = Array.isArray(req.params.requestId) ? req.params.requestId[0] : req.params.requestId;
+  try {
+    await prisma.labRequest.update({
+      where: { id: requestId },
+      data: {
+        status: parsed.data.status === "COMPLETED" ? "REPORTED" : "PROCESSING",
+        reportUrl: parsed.data.fileUrl,
+        notes: parsed.data.resultSummary,
+      },
+    });
+  } catch {
+    // fallback
+  }
+
+  const request = labRequests.find((entry) => entry.id === requestId);
   if (!request) {
     res.status(404).json({
       error: {
@@ -135,8 +238,37 @@ labRouter.patch("/requests/:requestId/report", requireRole(["LAB_STAFF", "ADMIN"
   res.json({ request });
 });
 
-labRouter.get("/patient/:patientId", requireRole(["PATIENT", "DOCTOR", "ADMIN", "LAB_STAFF"]), (req, res) => {
-  const patientRequests = labRequests.filter((entry) => entry.patientId === req.params.patientId);
+labRouter.get("/patient/:patientId", requireRole(["PATIENT", "DOCTOR", "ADMIN", "HOSPITAL_ADMIN", "LAB_STAFF"]), async (req, res) => {
+  const patientId = Array.isArray(req.params.patientId) ? req.params.patientId[0] : req.params.patientId;
+  try {
+    const dbRequests = await prisma.labRequest.findMany({
+      where: { patientId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (dbRequests.length > 0) {
+      res.json({
+        requests: dbRequests.map((r) => ({
+          id: r.id,
+          patientId: r.patientId,
+          doctorId: r.doctorId,
+          visitId: r.visitId || "",
+          testName: r.testName,
+          priority: r.priority.includes("P1") ? "STAT" : r.priority.includes("P2") ? "URGENT" : "ROUTINE",
+          status: r.status === "REPORTED" ? "COMPLETED" : "PENDING",
+          notes: r.notes || "",
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+          resultSummary: r.notes || "",
+          fileUrl: r.reportUrl || undefined,
+        })),
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  const patientRequests = labRequests.filter((entry) => entry.patientId === patientId);
   res.json({ requests: patientRequests });
 });
 

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { type AuthenticatedRequest, requireAuth, requireRole } from "../middleware/auth.js";
+import { prisma } from "../db.js";
 
 const recordSchema = z.object({
   patientId: z.string().min(1),
@@ -21,7 +22,7 @@ const recordSchema = z.object({
   chronicConditions: z.array(z.string()).default([]),
 });
 
-const recordStore: Array<{
+type EMRItem = {
   id: string;
   patientId: string;
   doctorId: string;
@@ -32,7 +33,9 @@ const recordStore: Array<{
   allergies: string[];
   chronicConditions: string[];
   createdAt: string;
-}> = [
+};
+
+const recordStore: EMRItem[] = [
   {
     id: "emr_1",
     patientId: "patient_demo_1",
@@ -53,9 +56,9 @@ export const emrRouter = Router();
 
 emrRouter.use(requireAuth);
 
-emrRouter.get("/patient/:patientId", requireRole(["PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"]), (req: AuthenticatedRequest, res) => {
-  const patientRecords = recordStore.filter((entry) => entry.patientId === req.params.patientId);
-  if (req.user?.role === "PATIENT" && req.user.id !== req.params.patientId) {
+emrRouter.get("/patient/:patientId", requireRole(["PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN"]), async (req: AuthenticatedRequest, res) => {
+  const patientId = Array.isArray(req.params.patientId) ? req.params.patientId[0] : req.params.patientId;
+  if (req.user?.role === "PATIENT" && req.user.id !== patientId) {
     res.status(403).json({
       error: {
         code: "FORBIDDEN",
@@ -66,11 +69,88 @@ emrRouter.get("/patient/:patientId", requireRole(["PATIENT", "DOCTOR", "RECEPTIO
     return;
   }
 
+  try {
+    const dbRecords = await prisma.eMRRecord.findMany({
+      where: { patientId },
+      include: { prescriptions: true, doctor: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (dbRecords.length > 0) {
+      res.json({
+        records: dbRecords.map((r) => ({
+          id: r.id,
+          patientId: r.patientId,
+          doctorId: r.doctorId,
+          visitId: r.visitId || "",
+          diagnosis: r.diagnosis,
+          notes: r.notes || "",
+          prescriptions: r.prescriptions.map((p) => ({
+            medicine: p.medicineName,
+            dosage: p.dosage,
+            duration: p.duration,
+            instructions: p.instructions || "",
+          })),
+          allergies: [],
+          chronicConditions: [],
+          createdAt: r.createdAt.toISOString(),
+        })),
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  const patientRecords = recordStore.filter((entry) => entry.patientId === patientId);
   res.json({ records: patientRecords });
 });
 
-emrRouter.get("/visit/:visitId", requireRole(["DOCTOR", "RECEPTIONIST", "ADMIN", "PATIENT"]), (req: AuthenticatedRequest, res) => {
-  const visitRecord = recordStore.find((entry) => entry.visitId === req.params.visitId);
+emrRouter.get("/visit/:visitId", requireRole(["DOCTOR", "RECEPTIONIST", "ADMIN", "HOSPITAL_ADMIN", "PATIENT"]), async (req: AuthenticatedRequest, res) => {
+  const visitId = Array.isArray(req.params.visitId) ? req.params.visitId[0] : req.params.visitId;
+
+  try {
+    const dbRecord = await prisma.eMRRecord.findFirst({
+      where: { visitId },
+      include: { prescriptions: true, doctor: true },
+    });
+    if (dbRecord) {
+      if (req.user?.role === "PATIENT" && req.user.id !== dbRecord.patientId) {
+        res.status(403).json({
+          error: {
+            code: "FORBIDDEN",
+            message: "You cannot access another patient’s visit record",
+            details: null,
+          },
+        });
+        return;
+      }
+
+      res.json({
+        record: {
+          id: dbRecord.id,
+          patientId: dbRecord.patientId,
+          doctorId: dbRecord.doctorId,
+          visitId: dbRecord.visitId || "",
+          diagnosis: dbRecord.diagnosis,
+          notes: dbRecord.notes || "",
+          prescriptions: dbRecord.prescriptions.map((p) => ({
+            medicine: p.medicineName,
+            dosage: p.dosage,
+            duration: p.duration,
+            instructions: p.instructions || "",
+          })),
+          allergies: [],
+          chronicConditions: [],
+          createdAt: dbRecord.createdAt.toISOString(),
+        },
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  const visitRecord = recordStore.find((entry) => entry.visitId === visitId);
   if (!visitRecord) {
     res.status(404).json({
       error: {
@@ -96,7 +176,7 @@ emrRouter.get("/visit/:visitId", requireRole(["DOCTOR", "RECEPTIONIST", "ADMIN",
   res.json({ record: visitRecord });
 });
 
-emrRouter.post("/record", requireRole(["DOCTOR", "ADMIN"]), (req, res) => {
+emrRouter.post("/record", requireRole(["DOCTOR", "ADMIN", "HOSPITAL_ADMIN"]), async (req, res) => {
   const parsed = recordSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -109,20 +189,63 @@ emrRouter.post("/record", requireRole(["DOCTOR", "ADMIN"]), (req, res) => {
     return;
   }
 
-  const record = {
-    id: `emr_${Date.now()}`,
+  const recordId = `emr_${Date.now()}`;
+  const now = new Date().toISOString();
+
+  try {
+    let patient = await prisma.patientProfile.findUnique({ where: { id: parsed.data.patientId } });
+    if (!patient) {
+      patient = await prisma.patientProfile.findUnique({ where: { userId: parsed.data.patientId } });
+    }
+
+    let doctor = await prisma.doctorProfile.findUnique({ where: { id: parsed.data.doctorId } });
+    if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({ where: { userId: parsed.data.doctorId } });
+    }
+
+    if (patient && doctor) {
+      await prisma.eMRRecord.create({
+        data: {
+          id: recordId,
+          patientId: patient.id,
+          doctorId: doctor.id,
+          visitId: parsed.data.visitId,
+          visitDate: new Date(),
+          diagnosis: parsed.data.diagnosis,
+          notes: parsed.data.notes,
+          symptoms: [],
+          attachments: [],
+          prescriptions: {
+            create: parsed.data.prescriptions.map((rx) => ({
+              patientId: patient!.id,
+              doctorId: doctor!.id,
+              medicineName: rx.medicine,
+              dosage: rx.dosage,
+              frequency: "Daily",
+              duration: rx.duration,
+              instructions: rx.instructions,
+            })),
+          },
+        },
+      });
+    }
+  } catch {
+    // fallback
+  }
+
+  const record: EMRItem = {
+    id: recordId,
     ...parsed.data,
-    createdAt: new Date().toISOString(),
+    createdAt: now,
   };
 
   recordStore.push(record);
-
   res.status(201).json({ record });
 });
 
-emrRouter.get("/summary/:patientId", requireRole(["PATIENT", "DOCTOR", "ADMIN"]), (req: AuthenticatedRequest, res) => {
-  const patientRecords = recordStore.filter((entry) => entry.patientId === req.params.patientId);
-  if (req.user?.role === "PATIENT" && req.user.id !== req.params.patientId) {
+emrRouter.get("/summary/:patientId", requireRole(["PATIENT", "DOCTOR", "ADMIN", "HOSPITAL_ADMIN"]), async (req: AuthenticatedRequest, res) => {
+  const patientId = Array.isArray(req.params.patientId) ? req.params.patientId[0] : req.params.patientId;
+  if (req.user?.role === "PATIENT" && req.user.id !== patientId) {
     res.status(403).json({
       error: {
         code: "FORBIDDEN",
@@ -133,8 +256,28 @@ emrRouter.get("/summary/:patientId", requireRole(["PATIENT", "DOCTOR", "ADMIN"])
     return;
   }
 
+  try {
+    const dbRecords = await prisma.eMRRecord.findMany({
+      where: { patientId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (dbRecords.length > 0) {
+      res.json({
+        patientId,
+        totalVisits: dbRecords.length,
+        latestDiagnosis: dbRecords[0]?.diagnosis ?? null,
+        allergies: [],
+        chronicConditions: [],
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  const patientRecords = recordStore.filter((entry) => entry.patientId === patientId);
   res.json({
-    patientId: req.params.patientId,
+    patientId,
     totalVisits: patientRecords.length,
     latestDiagnosis: patientRecords[patientRecords.length - 1]?.diagnosis ?? null,
     allergies: Array.from(new Set(patientRecords.flatMap((entry) => entry.allergies))),

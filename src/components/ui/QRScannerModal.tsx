@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Dialog } from "./dialog";
 import { Button } from "./button";
-import { validateAndProcessQRScan } from "../../utils/qrEngine";
+import { validateAndProcessQRScan, generateQRPayload } from "../../utils/qrEngine";
 import { useMockDB } from "../../hooks/useMockDB";
 
 interface QRScannerModalProps {
@@ -78,7 +78,15 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   };
 
   const handleExecuteScan = (rawQRString: string) => {
-    const result = validateAndProcessQRScan(rawQRString, staffName);
+    let inputToProcess = rawQRString.trim();
+    if (inputToProcess && !inputToProcess.startsWith("{")) {
+      // Manual token lookup fallback for patients with broken screens/paper slips
+      const matched = db.activeVisits.find((v) => v.tokenNumber.toUpperCase() === inputToProcess.toUpperCase());
+      if (matched) {
+        inputToProcess = generateQRPayload(matched);
+      }
+    }
+    const result = validateAndProcessQRScan(inputToProcess, staffName);
     setScanResult(result);
     triggerAudioBeep(result.success);
   };
@@ -86,15 +94,15 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const handleSimulatedScanToken = (token: string) => {
     const matchedVisit = db.activeVisits.find((v) => v.tokenNumber === token);
     const payload = matchedVisit 
-      ? JSON.stringify({
+      ? generateQRPayload(matchedVisit)
+      : JSON.stringify({
           v: 1,
-          token: matchedVisit.tokenNumber,
-          ref: matchedVisit.qrCodeReference,
-          dept: matchedVisit.departmentCode,
+          token,
+          ref: `ref_${token}`,
+          dept: token.split("-")[0],
           ts: Date.now(),
-          sig: "DEMO_SIG"
-        })
-      : token;
+          sig: "INVALID_DEMO"
+        });
 
     handleExecuteScan(payload);
   };

@@ -1,14 +1,16 @@
 openapi: 3.0.3
 info:
-  title: DevFusion 4.0 API
-  version: 0.1.0
-  description: Phase 0 API skeleton for the DevFusion 4.0 platform.
+  title: SmartMed AI — Hospital OPD Command Center API
+  version: 1.0.0
+  description: Clinical Outpatient Management, AI Triage, Real-Time Queue Telemetry, and Electronic Medical Records API.
 servers:
   - url: http://localhost:4000/api/v1
+    description: Local Development Server
 paths:
   /health:
     get:
-      summary: Health check endpoint
+      summary: Service Health & Telemetry
+      description: Returns backend uptime, DB connection status, and service metadata.
       responses:
         '200':
           description: Service is healthy
@@ -19,7 +21,280 @@ paths:
                 properties:
                   status:
                     type: string
+                    example: ok
                   service:
                     type: string
+                    example: smartmed-backend
                   timestamp:
                     type: string
+                    example: 2026-10-12T00:00:00.000Z
+
+  /auth/register:
+    post:
+      summary: Register Hospital User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, firstName, lastName, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                role:
+                  type: string
+                  enum: [PATIENT, DOCTOR, DEPARTMENT_STAFF, RECEPTIONIST, LAB_STAFF, PHARMACIST, HOSPITAL_ADMIN, ADMIN]
+      responses:
+        '201':
+          description: User registered successfully
+        '409':
+          description: User email already registered
+
+  /auth/login:
+    post:
+      summary: User Authentication
+      description: Issues Bearer JWT and sets secure HTTP-only cookie. Enforces 3-attempt lockout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+        '429':
+          description: Account locked due to repeated failed attempts
+
+  /auth/me:
+    get:
+      summary: Current Session Profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile details returned
+        '401':
+          description: Unauthorized
+
+  /queues/dashboard:
+    get:
+      summary: Clinic Queue Dashboard Summary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Aggregated queue positions, waiting count, and called tokens
+
+  /queues/live:
+    get:
+      summary: Real-Time Live Queue Feed
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active waiting queue entries and department allocations
+
+  /queues/checkin:
+    post:
+      summary: Sequential Patient OPD Check-In
+      description: Atomically calculates department-scoped sequential position in database.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [visitId]
+              properties:
+                visitId:
+                  type: string
+      responses:
+        '201':
+          description: Patient queued successfully with assigned token position
+
+  /queues/{queueId}/status:
+    patch:
+      summary: Update Queue Entry Status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [WAITING, CALLED, IN_PROGRESS, COMPLETED]
+      responses:
+        '200':
+          description: Status updated and broadcast triggered
+
+  /emr/record:
+    post:
+      summary: Create Clinical Medical Record (EMR)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patientId, doctorId, visitId, diagnosis, notes]
+              properties:
+                patientId:
+                  type: string
+                doctorId:
+                  type: string
+                visitId:
+                  type: string
+                diagnosis:
+                  type: string
+                notes:
+                  type: string
+                prescriptions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      medicine:
+                        type: string
+                      dosage:
+                        type: string
+                      duration:
+                        type: string
+                      instructions:
+                        type: string
+      responses:
+        '201':
+          description: Medical record and electronic prescriptions persisted
+
+  /emr/patient/{patientId}:
+    get:
+      summary: Retrieve Patient Medical History
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Longitudinal EMR records for patient
+
+  /billing/invoices:
+    get:
+      summary: List Hospital Billing Invoices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Invoice list with payment settlement status
+    post:
+      summary: Issue Medical Consultation or Service Invoice
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patientId, amount]
+              properties:
+                patientId:
+                  type: string
+                amount:
+                  type: number
+                currency:
+                  type: string
+                  default: INR
+                category:
+                  type: string
+                  enum: [CONSULTATION, LAB, PHARMACY, MISCELLANEOUS]
+                paymentMethod:
+                  type: string
+                  enum: [UPI, CARD, NET_BANKING, CASH]
+      responses:
+        '201':
+          description: Invoice created
+
+  /pharmacy/inventory:
+    get:
+      summary: Hospital Formulary Stock Inventory
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of medicines, batch expiration dates, and unit stock
+
+  /pharmacy/fulfill:
+    post:
+      summary: Dispense and Fulfill Prescription
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prescriptionId, medicationName, quantity]
+              properties:
+                prescriptionId:
+                  type: string
+                medicationName:
+                  type: string
+                quantity:
+                  type: integer
+      responses:
+        '201':
+          description: Medication dispensed and inventory decremented
+
+  /admin/analytics:
+    get:
+      summary: Hospital Command Telemetry Analytics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Live throughput, departmental bed capacity, wait times, and revenue aggregations
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

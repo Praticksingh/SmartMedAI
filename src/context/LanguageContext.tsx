@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 
-export type Language = "en" | "hi";
+export type Language = "en" | "hi" | "bn";
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
@@ -402,6 +402,140 @@ export const translations: Record<Language, Record<string, string>> = {
     // Footer
     "footer.rights": "सरकारी अस्पताल ओपीडी कतार प्रबंधन एवं ट्रायेज प्रणाली।",
     "footer.disclaimer": "प्रतियोगिता प्रोटोटाइप — यह चिकित्सीय जांच का विकल्प नहीं है। आपात स्थिति में तुरंत एम्बुलेंस को कॉल करें।"
+  },
+  bn: {
+    // Nav & Shell
+    "nav.patientDashboard": "রোগী ড্যাশবোর্ড",
+    "nav.staffDashboard": "স্টাফ কমান্ড",
+    "nav.hospitalAdmin": "হাসপাতাল প্রশাসন",
+    "nav.publicQueue": "পাবলিক কিউ ডিসপ্লে",
+    "nav.signOut": "সাইন আউট",
+    "nav.myDashboard": "আমার ড্যাশবোর্ড",
+
+    // Language Toggle
+    "lang.toggle": "ভাষা পরিবর্তন করুন",
+    "lang.en": "English",
+    "lang.hi": "हिंदी",
+    "lang.bn": "বাংলা",
+    "lang.helperMessage": "যেকোনো সময় ভাষা পরিবর্তন করতে পারেন।",
+
+    // Landing Page
+    "landing.badge": "স্মার্ট কিউ ব্যবস্থাপনা",
+    "landing.title": "এআই ট্রায়াজ সহ হাসপাতাল প্রবাহ নিয়ন্ত্রণ",
+    "landing.subtitle": "স্মার্টমেড এআই ওপিডি ক্লিনিকগুলিতে অপেক্ষার সময় অপ্টিমাইজ করতে এবং রোগীদের পরিচালনা করতে সহায়তা করে।",
+    "landing.patientsWaiting": "অপেক্ষমাণ রোগী",
+    "landing.waitingDesc": "সক্রিয় কিউতে অপেক্ষারত",
+    "landing.activeTreatments": "চলমান চিকিৎসা",
+    "landing.treatmentsDesc": "ডাক্তারদের দ্বারা চিকিৎসাধীন",
+    "landing.pausedWarnings": "ক্লিনিক বিলম্ব সতর্কতা",
+    "landing.pausedText": "স্থগিত",
+    "landing.selectWorkspace": "আপনার পোর্টাল নির্বাচন করুন",
+    "landing.selectSub": "ফাংশনাল ড্যাশবোর্ড খুলতে একটি রুট বেছে নিন।",
+    "landing.patientPortalTitle": "রোগী ট্রায়াজ পোর্টাল",
+    "landing.patientPortalDesc": "লক্ষণ নির্ধারণ শুরু করুন, অগ্রাধিকার টোকেন পান এবং কিউআর কোড দিয়ে চেক ইন করুন।",
+    "landing.startPatientFlow": "রোগী পোর্টাল শুরু করুন",
+
+    // Patient Dashboard Header
+    "patient.hubTitle": "রোগী ওপিডি হাব",
+    "patient.greeting": "নমস্কার",
+    "patient.profileVerified": "প্রোফাইল যাচাইকৃত",
+
+    // Symptom Card Intake
+    "patient.symptomTitle": "আজ আপনার কী সমস্যা?",
+    "patient.symptomDesc": "আমাদের নির্দেশিত লক্ষণ ইনপুট সহকারী শুরু করুন। আমাদের এআই সঠিক বিভাগে আপনাকে নির্দেশ করবে।",
+    "patient.disclaimerTitle": "গুরুত্বপূর্ণ চিকিৎসা সতর্কতা",
+    "patient.disclaimerDesc": "এই মূল্যায়ন একটি ক্লিনিক্যাল সহায়তা এবং পেশাদার জরুরি চিকিৎসার বিকল্প নয়।",
+    "patient.startAssessment": "এআই ট্রায়াজ মূল্যায়ন শুরু করুন",
+
+    // Previous Visits Log
+    "patient.previousVisits": "পূর্ববর্তী পরিদর্শনের রেকর্ড",
+    "patient.statusCompleted": "সম্পন্ন",
+    "patient.statusNoShow": "অনুপস্থিত",
+    "patient.statusCancelled": "বাতিল",
+
+    // Active Token Ticket
+    "patient.activeTokenStatus": "সক্রিয় টোকেন স্থিতি",
+    "patient.opdTicket": "ওপিডি ক্লিনিক টিকিট",
+    "patient.yourTokenNumber": "আপনার টোকেন নম্বর",
+    "patient.queuePosition": "কিউ অবস্থান",
+    "patient.ahead": "জন সামনে আছেন",
+    "patient.estWait": "আনুমানিক অপেক্ষা",
+
+    // Public Display
+    "public.title": "লাইভ হাসপাতাল টিভি ডিসপ্লে",
+    "public.singleClinic": "একক ক্লিনিক ভিউ",
+    "public.hospitalGrid": "হাসপাতাল গ্রিড মোড",
+
+    // Triage Wizard
+    "triage.title": "এআই প্রাথমিক লক্ষণ ট্রায়াজ মূল্যায়ন",
+    "triage.subtitle": "স্বয়ংক্রিয় কিউ অগ্রাধিকার টোকেন পেতে আপনার প্রাথমিক লক্ষণগুলি নির্বাচন করুন।",
+    "triage.readOutLoud": "জোরে শুনুন",
+    "triage.step0Label": "শারীরিক বিভাগ",
+    "triage.step0Desc": "প্রভাবিত অঙ্গ",
+    "triage.step1Label": "লক্ষণ",
+    "triage.step1Desc": "নির্দিষ্ট সমস্যা",
+    "triage.step2Label": "তীব্রতা ও সময়",
+    "triage.step2Desc": "ব্যথার স্কেল",
+    "triage.step3Label": "জরুরি লক্ষণ",
+    "triage.step3Desc": "রেড ফ্ল্যাগ প্রশ্ন",
+    "triage.step4Label": "এআই ট্রায়াজ",
+    "triage.step4Desc": "ক্লিনিক্যাল ফলাফল",
+    "triage.step5Label": "ওপিডি পাস",
+    "triage.step5Desc": "ডিজিটাল টিকিট",
+
+    "triage.step0Title": "শারীরিক বিভাগ নির্বাচন করুন",
+    "triage.step0Subtitle": "আপনার লক্ষণ কোন অঙ্গ ব্যবস্থার সাথে সম্পর্কিত?",
+    "triage.step1Title": "আপনার প্রধান লক্ষণ নির্বাচন করুন",
+    "triage.step1Subtitle": "একাধিক লক্ষণ প্রযোজ্য হলে বেছে নিন",
+    "triage.searchSymptoms": "লক্ষণ খুঁজুন...",
+    "triage.noSymptoms": "কোনো লক্ষণ পাওয়া যায়নি",
+    "triage.redFlag": "জরুরি সতর্কতা",
+    "triage.notSure": "নিশ্চিত নন? সমস্ত লক্ষণ দেখুন",
+    "triage.step4Title": "এআই ট্রায়াজ সুপারিশ",
+    "triage.step4Subtitle": "আপনার তথ্যের ভিত্তিতে প্রস্তুত অগ্রাধিকার",
+    "triage.clinicalPriority": "ক্লিনিক্যাল অগ্রাধিকার গ্রেড",
+    "triage.priorityScore": "স্কোর",
+    "triage.recommendedDept": "প্রস্তাবিত ক্লিনিক বিভাগ",
+    "triage.clinicalReasoning": "এআই ক্লিনিক্যাল যুক্তি",
+    "triage.disclaimerNotice": "এটি একটি প্রাথমিক সিদ্ধান্ত সহায়তা। হাসপাতালে ডাক্তার দ্বারা মূল্যায়ন করা হবে।",
+    "triage.step5Title": "আপনার ওপিডি পাস প্রস্তুত!",
+    "triage.step5Subtitle": "ক্লিনিকের প্রবেশদ্বারে এই ডিজিটাল পাসটি স্ক্যান করুন।",
+    "triage.viewDashboard": "রোগী ড্যাশবোর্ডে ফিরে যান",
+
+    // Priority labels
+    "prio.p1": "পি১ — আশঙ্কাজনক / তাৎক্ষণিক যত্ন",
+    "prio.p2": "পি২ — জরুরি / ১৫ মিনিটের মধ্যে",
+    "prio.p3": "পি৩ — মাঝারি / ৩০ মিনিটের মধ্যে",
+    "prio.p4": "পি৪ — সাধারণ ওপিডি রুটিন",
+    "prio.waitP1": "তাৎক্ষণিক (< ৫ মিনিট)",
+    "prio.waitP2": "১৫ মিনিটের মধ্যে",
+    "prio.waitP3": "৩০ মিনিটের মধ্যে",
+    "prio.waitP4": "৬০ মিনিটের মধ্যে",
+
+    // Departments
+    "dept.CARD": "কার্ডিওলজি (হৃদরোগ বিভাগ)",
+    "dept.RESP": "রেসপিরেটরি মেডিসিন (ফুসফুস ও শ্বাসযন্ত্র)",
+    "dept.NEURO": "নিউরোলজি (স্নায়ুরোগ বিভাগ)",
+    "dept.GASTRO": "গ্যাস্ট্রোএন্টারোলজি (পাকস্থলী ও লিভার)",
+    "dept.ORTHO": "অর্থোপেডিকস (হাড় ও অস্থি বিভাগ)",
+    "dept.DERM": "ডার্মাটোলজি (চর্ম ও অ্যালার্জি)",
+    "dept.UROL": "ইউরোলজি (মূত্রনালী ও বৃক্ক)",
+    "dept.PSYCH": "সাইকিয়াট্রি (মানসিক স্বাস্থ্য)",
+    "dept.PEDI": "পেডিয়াট্রিকস (শিশু বিভাগ)",
+    "dept.GENMED": "জেনারেল মেডিসিন (সাধারণ ওপিডি)",
+    "dept.OBS": "প্রসূতি ও স্ত্রীরোগ বিভাগ",
+
+    // Body systems
+    "sys.cardiac": "হৃদপিণ্ড ও রক্ত সঞ্চালন",
+    "sys.respiratory": "ফুসফুস ও শ্বাসযন্ত্র",
+    "sys.neurological": "মস্তিষ্ক ও স্নায়ু",
+    "sys.gastrointestinal": "পাকস্থলী ও পরিপাকতন্ত্র",
+    "sys.musculoskeletal": "হাড় ও পেশী",
+    "sys.dermatological": "ত্বক ও অ্যালার্জি",
+    "sys.urological": "বৃক্ক ও মূত্রনালী",
+    "sys.psychiatric": "মানসিক স্বাস্থ্য",
+    "sys.pediatric": "শিশু স্বাস্থ্য",
+    "sys.general": "সাধারণ লক্ষণ",
   }
 };
 
@@ -464,7 +598,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguageState] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-      if (saved === "hi" || saved === "en") {
+      if (saved === "hi" || saved === "en" || saved === "bn") {
         return saved;
       }
     } catch (e) {
