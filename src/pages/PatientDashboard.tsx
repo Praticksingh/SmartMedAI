@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Sparkles, 
@@ -11,10 +11,10 @@ import {
   ClipboardPlus, 
   Stethoscope, 
   FileClock, 
-  UserCheck,
   Video,
   Pill,
-  FlaskConical
+  FlaskConical,
+  Edit3
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -34,8 +34,56 @@ import { LanguageSwitcher } from "../components/ui/LanguageSwitcher";
 export const PatientDashboard: React.FC = () => {
   const navigate = useNavigate();
   const db = useMockDB();
-  const { profile, user } = useAuth();
+  const { profile, user, updateProfile } = useAuth();
   const { t } = useLanguage();
+
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editFullName, setEditFullName] = useState("");
+  const [editDob, setEditDob] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState("");
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState("");
+
+  useEffect(() => {
+    if (profile) {
+      setEditFullName(profile.fullName || "");
+      setEditDob(profile.dateOfBirth && profile.dateOfBirth !== "1995-01-01" ? profile.dateOfBirth : "");
+      setEditGender(profile.gender && profile.gender !== "Unspecified" ? profile.gender : "");
+      setEditPhone(profile.phone && !profile.phone.includes("0000") && !profile.phone.includes("1111") ? profile.phone : "");
+    }
+  }, [profile, isEditProfileOpen]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSaveError("");
+    setProfileSaveSuccess("");
+    if (!editFullName.trim()) { setProfileSaveError("Please enter your full name."); return; }
+    if (!editDob) { setProfileSaveError("Please enter your date of birth."); return; }
+    if (!editGender) { setProfileSaveError("Please select your gender."); return; }
+    if (!editPhone.trim()) { setProfileSaveError("Please enter your mobile number."); return; }
+
+    setIsSavingProfile(true);
+    const res = await updateProfile({
+      fullName: editFullName.trim(),
+      dateOfBirth: editDob,
+      gender: editGender,
+      phone: editPhone.trim(),
+    });
+    setIsSavingProfile(false);
+
+    if (res.error) {
+      setProfileSaveError(res.error);
+      return;
+    }
+
+    setProfileSaveSuccess("Profile updated successfully!");
+    setTimeout(() => {
+      setIsEditProfileOpen(false);
+      setProfileSaveSuccess("");
+    }, 1200);
+  };
 
   const patientName = profile?.fullName ?? user?.email?.split("@")[0] ?? "Guest";
   
@@ -61,11 +109,6 @@ export const PatientDashboard: React.FC = () => {
     ? calculateEstimatedWaitTime(queuePos - 1, 6)
     : activeDept?.wait || "Calculating";
 
-  const previousVisits = [
-    { id: "p_1", date: "July 24, 2026", department: "Cardiology", status: t("patient.statusCompleted"), token: "C-012" },
-    { id: "p_2", date: "June 11, 2026", department: "Pediatrics", status: t("patient.statusCompleted"), token: "P-044" }
-  ];
-
   // Resolve dynamic completed visits from localStorage
   const completedVisits = db.activeVisits
     .filter(
@@ -80,7 +123,7 @@ export const PatientDashboard: React.FC = () => {
       token: v.tokenNumber
     }));
 
-  const allVisits = [...completedVisits, ...previousVisits];
+  const allVisits = completedVisits;
 
   const cancelActiveVisit = () => {
     if (!activeVisit) return;
@@ -125,13 +168,28 @@ export const PatientDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-800 mt-1">
             {t("patient.greeting")}, {patientName}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {profile?.gender && <span>{profile.gender} · </span>}
-            {profile?.dateOfBirth && (
-              <span>DOB: {profile.dateOfBirth} · </span>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1">
+            {profile?.gender ? (
+              <span className="font-medium text-slate-700">{profile.gender} · </span>
+            ) : null}
+            {profile?.dateOfBirth ? (
+              <span>DOB: <strong className="text-slate-700">{profile.dateOfBirth}</strong> · </span>
+            ) : (
+              <span className="text-amber-600 font-semibold">DOB: Not provided · </span>
             )}
-            {profile?.phone && <span>{profile.phone}</span>}
-          </p>
+            {profile?.phone ? (
+              <span>Mobile: <strong className="text-slate-700">{profile.phone}</strong></span>
+            ) : (
+              <span className="text-amber-600 font-semibold">Mobile: Not provided</span>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsEditProfileOpen(true)}
+              className="text-teal-600 hover:text-teal-800 font-bold underline ml-1.5 cursor-pointer"
+            >
+              (Edit / Add)
+            </button>
+          </div>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -143,12 +201,40 @@ export const PatientDashboard: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 shadow-sm">
-            <UserCheck className="h-4 w-4" />
-            <span>{t("patient.profileVerified")}</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditProfileOpen(true)}
+            className="flex items-center gap-1.5 text-xs text-teal-700 font-semibold bg-teal-50 hover:bg-teal-100 active:bg-teal-200 px-3 py-1.5 rounded-full border border-teal-200 shadow-sm transition-colors cursor-pointer"
+          >
+            <Edit3 className="h-3.5 w-3.5 text-teal-600" />
+            <span>Edit Profile</span>
+          </button>
         </div>
       </div>
+
+      {/* Incomplete profile prompt banner */}
+      {(!profile?.dateOfBirth || !profile?.phone || !profile?.gender) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-900">Incomplete Patient Demographics</h4>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Please add your Date of Birth and Mobile Number so clinical staff and OPD queue engines can properly prioritize your care.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setIsEditProfileOpen(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white shrink-0 cursor-pointer"
+          >
+            Add DOB & Mobile
+          </Button>
+        </div>
+      )}
 
       {/* Triage Reference Rules Sheet */}
       <TriageRuleCard />
@@ -438,6 +524,111 @@ export const PatientDashboard: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Edit Profile & Demographics Modal */}
+      {isEditProfileOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-5 text-white flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold">Patient Profile & Demographics</h3>
+                <p className="text-xs text-teal-100 mt-0.5">Update your DOB, mobile number, and personal details</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(false)}
+                className="text-teal-200 hover:text-white rounded-lg p-1 text-xl leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
+              {profileSaveError && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+                  {profileSaveError}
+                </div>
+              )}
+              {profileSaveSuccess && (
+                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+                  {profileSaveSuccess}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={e => setEditFullName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  placeholder="e.g. Prabhat Vishwakarma"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date of Birth</label>
+                  <input
+                    type="date"
+                    required
+                    value={editDob}
+                    onChange={e => setEditDob(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Gender</label>
+                  <select
+                    required
+                    value={editGender}
+                    onChange={e => setEditGender(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Mobile Number</label>
+                <input
+                  type="tel"
+                  required
+                  value={editPhone}
+                  onChange={e => setEditPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  placeholder="e.g. +91 98765 43210"
+                />
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Used for OPD queue alerts and SMS token updates</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditProfileOpen(false)}
+                  disabled={isSavingProfile}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  isLoading={isSavingProfile}
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  Save Profile
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

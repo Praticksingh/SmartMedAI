@@ -46,139 +46,32 @@ export interface AuditLog {
 const STORAGE_KEY = "opdflow_mock_db";
 const CUSTOM_EVENT_TYPE = "opdflow_db_update";
 
-// Initial mock staff dataset
-export const INITIAL_STAFF: StaffMember[] = [
-  { id: "s_1", name: "Dr. Alok Sen",        role: "DOCTOR", assignedDeptCode: "CARD",   status: "ACTIVE" },
-  { id: "s_2", name: "Dr. Sunita Rao",      role: "DOCTOR", assignedDeptCode: "PEDI",   status: "ACTIVE" },
-  { id: "s_3", name: "Dr. Ramesh Patel",    role: "DOCTOR", assignedDeptCode: "DERM",   status: "ON_BREAK" },
-  { id: "s_4", name: "Dr. Kavita Sharma",   role: "DOCTOR", assignedDeptCode: "GENMED", status: "ACTIVE" },
-  { id: "s_5", name: "Dr. Rajesh Gupta",    role: "DOCTOR", assignedDeptCode: "ORTHO",  status: "ACTIVE" },
-  { id: "s_6", name: "Sister Priya Nair",   role: "NURSE",  assignedDeptCode: "CARD",   status: "ACTIVE" },
-  { id: "s_7", name: "Nurse Vikram Mehta",  role: "NURSE",  assignedDeptCode: "PEDI",   status: "ACTIVE" },
-  { id: "s_8", name: "Nurse Ananya Roy",    role: "NURSE",  assignedDeptCode: "RESP",   status: "ACTIVE" },
+const CURRENT_STATE_SCHEMA = 2;
+
+// Initial staff dataset
+export const INITIAL_STAFF: StaffMember[] = [];
+
+// Initial dataset — covers all hospital clinics with zeroed initial queues
+export const INITIAL_DEPARTMENTS: DepartmentData[] = [
+  { id: 1,  name: "Cardiology",              code: "CARD",   room: "Room 204", waiting: 0, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 2,  name: "Paediatrics",             code: "PEDI",   room: "Room 105", waiting: 0, treating: 0, maxCapacity: 4, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 3,  name: "Dermatology",             code: "DERM",   room: "Room 310", waiting: 0, treating: 0, maxCapacity: 2, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 4,  name: "Orthopaedics",            code: "ORTHO",  room: "Room 112", waiting: 0, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 5,  name: "Neurology",               code: "NEURO",  room: "Room 301", waiting: 0, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 6,  name: "Respiratory Medicine",    code: "RESP",   room: "Room 208", waiting: 0, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 7,  name: "Gastroenterology",        code: "GASTRO", room: "Room 216", waiting: 0, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 8,  name: "Urology",                 code: "UROL",   room: "Room 140", waiting: 0, treating: 0, maxCapacity: 2, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 9,  name: "Psychiatry",              code: "PSYCH",  room: "Room 402", waiting: 0, treating: 0, maxCapacity: 2, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 10, name: "General Medicine",        code: "GENMED", room: "Room 101", waiting: 0, treating: 0, maxCapacity: 5, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
+  { id: 11, name: "Obstetrics & Gynaecology",code: "OBS",    room: "Room 501", waiting: 0, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "0 min", nowServing: null, nextTokens: [] },
 ];
 
-// Initial mock dataset — covers all departments the triage engine can recommend
-const INITIAL_DEPARTMENTS: DepartmentData[] = [
-  { id: 1,  name: "Cardiology",              code: "CARD",   room: "Room 204", waiting: 3, treating: 1, maxCapacity: 3, currentCapacity: 1, status: "ACTIVE", wait: "14 min",     nowServing: "C-027", nextTokens: ["C-028", "C-031", "C-033"] },
-  { id: 2,  name: "Paediatrics",             code: "PEDI",   room: "Room 105", waiting: 3, treating: 1, maxCapacity: 4, currentCapacity: 1, status: "ACTIVE", wait: "28 min",     nowServing: "P-044", nextTokens: ["P-045", "P-048", "P-050"] },
-  { id: 3,  name: "Dermatology",             code: "DERM",   room: "Room 310", waiting: 2, treating: 0, maxCapacity: 2, currentCapacity: 0, status: "PAUSED", wait: "Queue Paused", nowServing: null,    nextTokens: ["D-009", "D-010"] },
-  { id: 4,  name: "Orthopaedics",            code: "ORTHO",  room: "Room 112", waiting: 4, treating: 1, maxCapacity: 3, currentCapacity: 1, status: "ACTIVE", wait: "9 min",      nowServing: "O-018", nextTokens: ["O-021", "O-022", "O-025", "O-026"] },
-  { id: 5,  name: "Neurology",               code: "NEURO",  room: "Room 301", waiting: 1, treating: 1, maxCapacity: 3, currentCapacity: 1, status: "ACTIVE", wait: "20 min",     nowServing: "N-003", nextTokens: ["N-004"] },
-  { id: 6,  name: "Respiratory Medicine",    code: "RESP",   room: "Room 208", waiting: 2, treating: 1, maxCapacity: 3, currentCapacity: 1, status: "ACTIVE", wait: "18 min",     nowServing: "R-011", nextTokens: ["R-012", "R-013"] },
-  { id: 7,  name: "Gastroenterology",        code: "GASTRO", room: "Room 216", waiting: 2, treating: 0, maxCapacity: 3, currentCapacity: 0, status: "ACTIVE", wait: "35 min",     nowServing: null,    nextTokens: ["G-006", "G-007"] },
-  { id: 8,  name: "Urology",                 code: "UROL",   room: "Room 140", waiting: 1, treating: 0, maxCapacity: 2, currentCapacity: 0, status: "ACTIVE", wait: "40 min",     nowServing: null,    nextTokens: ["U-002"] },
-  { id: 9,  name: "Psychiatry",              code: "PSYCH",  room: "Room 402", waiting: 1, treating: 1, maxCapacity: 2, currentCapacity: 1, status: "ACTIVE", wait: "30 min",     nowServing: "PS-001",nextTokens: ["PS-002"] },
-  { id: 10, name: "General Medicine",        code: "GENMED", room: "Room 101", waiting: 5, treating: 1, maxCapacity: 5, currentCapacity: 1, status: "ACTIVE", wait: "45 min",     nowServing: "GM-018",nextTokens: ["GM-019","GM-020","GM-021","GM-022","GM-023"] },
-  { id: 11, name: "Obstetrics & Gynaecology",code: "OBS",    room: "Room 501", waiting: 2, treating: 1, maxCapacity: 3, currentCapacity: 1, status: "ACTIVE", wait: "25 min",     nowServing: "OB-004",nextTokens: ["OB-005","OB-006"] },
-];
+export const INITIAL_LOGS: AuditLog[] = [];
 
-const INITIAL_LOGS: AuditLog[] = [
-  { time: "16:34", actor: "Dr. Alok Sen (Admin)", action: "DEPARTMENT_PAUSED", desc: "Paused Dermatology queue due to clinic room maintenance." },
-  { time: "15:12", actor: "Sister Priya Nair (Staff)", action: "QUEUE_OVERRIDE", desc: "Manually upgraded C-028 to P1 Critical (Patient showing signs of acute dyspnea)." },
-  { time: "14:45", actor: "System AI", action: "TRIAGE_CREATED", desc: "Symptom assessment processed. Generated token P-045 (Recommended Pediatrics, P2 High)." }
-];
-
-export const INITIAL_VISITS: PatientVisit[] = [
-  {
-    id: "v_c028",
-    patientName: "Rahul Verma",
-    departmentCode: "CARD",
-    priority: "p1",
-    priorityText: "P1 Critical",
-    tokenNumber: "C-028",
-    qrCodeReference: "qr_sec_c028_card",
-    status: "WAITING",
-    mainSymptom: "Acute Chest Pain / Radiating Arm Pain",
-    submittedAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_c031",
-    patientName: "Meera Nair",
-    departmentCode: "CARD",
-    priority: "p2",
-    priorityText: "P2 High",
-    tokenNumber: "C-031",
-    qrCodeReference: "qr_sec_c031_card",
-    status: "WAITING",
-    mainSymptom: "Tachycardia & Palpitations",
-    submittedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_c033",
-    patientName: "Vikram Singhania",
-    departmentCode: "CARD",
-    priority: "p3",
-    priorityText: "P3 Moderate",
-    tokenNumber: "C-033",
-    qrCodeReference: "qr_sec_c033_card",
-    status: "WAITING",
-    mainSymptom: "Leg Oedema / Swollen Feet",
-    submittedAt: new Date(Date.now() - 22 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_p045",
-    patientName: "Baby Aarohi (Guardian: Sunita)",
-    departmentCode: "PEDI",
-    priority: "p2",
-    priorityText: "P2 High",
-    tokenNumber: "P-045",
-    qrCodeReference: "qr_sec_p045_pedi",
-    status: "WAITING",
-    mainSymptom: "High Grade Febrile Illness (>39°C)",
-    submittedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_p048",
-    patientName: "Master Kabir (Guardian: Manoj)",
-    departmentCode: "PEDI",
-    priority: "p2",
-    priorityText: "P2 High",
-    tokenNumber: "P-048",
-    qrCodeReference: "qr_sec_p048_pedi",
-    status: "WAITING",
-    mainSymptom: "Persistent Wheezing & Cough",
-    submittedAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_p050",
-    patientName: "Baby Ishaan (Guardian: Priya)",
-    departmentCode: "PEDI",
-    priority: "p3",
-    priorityText: "P3 Moderate",
-    tokenNumber: "P-050",
-    qrCodeReference: "qr_sec_p050_pedi",
-    status: "WAITING",
-    mainSymptom: "Earache & Rhinorrhea",
-    submittedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_o021",
-    patientName: "Deepak Joshi",
-    departmentCode: "ORTHO",
-    priority: "p2",
-    priorityText: "P2 High",
-    tokenNumber: "O-021",
-    qrCodeReference: "qr_sec_o021_ortho",
-    status: "WAITING",
-    mainSymptom: "Acute Ankle Sprain / Suspected Fracture",
-    submittedAt: new Date(Date.now() - 7 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "v_o022",
-    patientName: "Sunita Deshmukh",
-    departmentCode: "ORTHO",
-    priority: "p3",
-    priorityText: "P3 Moderate",
-    tokenNumber: "O-022",
-    qrCodeReference: "qr_sec_o022_ortho",
-    status: "WAITING",
-    mainSymptom: "Lumbar Back Pain",
-    submittedAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-  },
-];
+export const INITIAL_VISITS: PatientVisit[] = [];
 
 interface MockDB {
+  schemaVersion?: number;
   departments: DepartmentData[];
   auditLogs: AuditLog[];
   activeVisits: PatientVisit[];
@@ -189,7 +82,8 @@ interface MockDB {
 export const readDB = (): MockDB => {
   const data = localStorage.getItem(STORAGE_KEY);
   if (!data) {
-    const defaultDB = { 
+    const defaultDB: MockDB = { 
+      schemaVersion: CURRENT_STATE_SCHEMA,
       departments: INITIAL_DEPARTMENTS, 
       auditLogs: INITIAL_LOGS, 
       activeVisits: INITIAL_VISITS,
@@ -199,16 +93,29 @@ export const readDB = (): MockDB => {
     return defaultDB;
   }
   try {
-    const parsed = JSON.parse(data);
-    if (!parsed.staffMembers) parsed.staffMembers = INITIAL_STAFF;
-    if (!parsed.activeVisits || parsed.activeVisits.length === 0) {
-      parsed.activeVisits = INITIAL_VISITS;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    const parsed = JSON.parse(data) as MockDB;
+    // Migration: if missing schema version or contains old mock tokens, purge to clean state
+    const hasLegacyMockVisits = parsed.activeVisits?.some(v => v.id?.startsWith("v_c") || v.id?.startsWith("v_p") || v.id?.startsWith("v_o"));
+    if (!parsed.schemaVersion || parsed.schemaVersion < CURRENT_STATE_SCHEMA || hasLegacyMockVisits) {
+      const sanitizedDB: MockDB = {
+        schemaVersion: CURRENT_STATE_SCHEMA,
+        departments: INITIAL_DEPARTMENTS,
+        auditLogs: [],
+        activeVisits: [],
+        staffMembers: []
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedDB));
+      return sanitizedDB;
     }
+    if (!parsed.departments || parsed.departments.length === 0) parsed.departments = INITIAL_DEPARTMENTS;
+    if (!parsed.staffMembers) parsed.staffMembers = [];
+    if (!parsed.activeVisits) parsed.activeVisits = [];
+    if (!parsed.auditLogs) parsed.auditLogs = [];
     return parsed;
   } catch (e) {
     console.error("Failed to parse mock DB", e);
     return { 
+      schemaVersion: CURRENT_STATE_SCHEMA,
       departments: INITIAL_DEPARTMENTS, 
       auditLogs: INITIAL_LOGS, 
       activeVisits: INITIAL_VISITS,
@@ -401,12 +308,6 @@ export const markPatientNoShow = (code: string, actor: string) => {
 export const getTokenPriority = (token: string, activeVisits: PatientVisit[]): "p1" | "p2" | "p3" | "p4" => {
   const visit = activeVisits.find(v => v.tokenNumber === token);
   if (visit) return visit.priority;
-
-  // Fallback defaults for mock seed data
-  if (token === "C-028" || token.endsWith("8")) return "p1";
-  if (token === "C-031" || token === "P-045" || token === "P-048" || token === "O-021") return "p2";
-  if (token === "C-033" || token === "P-050" || token === "O-022" || token === "O-025") return "p3";
-
   return "p4";
 };
 
@@ -601,11 +502,12 @@ export const updateDepartmentCapacity = (
 
 // Reset Database to Initial State
 export const resetDB = () => {
-  const defaultDB = { 
+  const defaultDB: MockDB = { 
+    schemaVersion: CURRENT_STATE_SCHEMA,
     departments: INITIAL_DEPARTMENTS, 
-    auditLogs: INITIAL_LOGS, 
+    auditLogs: [], 
     activeVisits: [],
-    staffMembers: INITIAL_STAFF 
+    staffMembers: [] 
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDB));
   window.dispatchEvent(new CustomEvent(CUSTOM_EVENT_TYPE));

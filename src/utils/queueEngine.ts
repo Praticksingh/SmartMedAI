@@ -36,12 +36,6 @@ export const getTokenPriorityCode = (
 ): PriorityCode => {
   const visit = activeVisits.find((v) => v.tokenNumber === token);
   if (visit) return visit.priority;
-
-  // Fallback defaults for initial mock seed data
-  if (token === "C-028" || token.endsWith("8")) return "p1";
-  if (token.startsWith("C") || token.startsWith("P") || token === "O-021") return "p2";
-  if (token === "C-033" || token === "P-050" || token === "O-022" || token === "O-025") return "p3";
-  
   return "p4";
 };
 

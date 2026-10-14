@@ -30,7 +30,7 @@ export const SystemHealthModal: React.FC<SystemHealthModalProps> = ({
     setTimeout(() => {
       const checks: DiagnosticCheck[] = [
         {
-          name: "Mock Database State",
+          name: "Hospital Database State",
           category: "Storage",
           passed: db.departments.length > 0,
           details: `Synchronized ${db.departments.length} clinics & ${db.auditLogs.length} compliance audit logs in LocalStorage.`,

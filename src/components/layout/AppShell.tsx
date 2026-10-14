@@ -387,13 +387,22 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   </div>
                 </>
               ) : (
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white text-sm font-bold hover:shadow-md hover:shadow-sky-500/25 transition-all shadow-xs"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Clinical Login
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-sm font-semibold transition-all shadow-xs"
+                  >
+                    <LogIn className="h-4 w-4 text-slate-500" />
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-white text-sm font-bold hover:shadow-md hover:shadow-sky-500/25 transition-all shadow-xs"
+                  >
+                    <UserCircle2 className="h-4 w-4" />
+                    Sign Up Free
+                  </Link>
+                </div>
               )}
             </div>
 
@@ -449,9 +458,22 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                     </button>
                   </>
                 ) : (
-                  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-1.5 text-xs text-sky-600 font-semibold">
-                    <LogIn className="h-3.5 w-3.5" /> Clinical Login
-                  </Link>
+                  <div className="flex flex-col gap-2 w-full pt-1">
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-semibold"
+                    >
+                      <LogIn className="h-3.5 w-3.5" /> Sign In
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 text-white text-xs font-bold shadow-xs"
+                    >
+                      <UserCircle2 className="h-3.5 w-3.5" /> Create New Account / Sign Up
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

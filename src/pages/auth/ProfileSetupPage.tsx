@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   UserCircle2,
@@ -14,16 +14,29 @@ import { Button } from "../../components/ui/button";
 
 export const ProfileSetupPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, updateProfile, signOut } = useAuth();
+  const { user, profile, updateProfile, signOut } = useAuth();
 
-  const [fullName, setFullName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gender, setGender] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState(profile?.fullName || user?.email?.split("@")[0] || "");
+  const [dateOfBirth, setDateOfBirth] = useState(
+    profile?.dateOfBirth && profile.dateOfBirth !== "1995-01-01" ? profile.dateOfBirth : ""
+  );
+  const [gender, setGender] = useState(
+    profile?.gender && profile.gender !== "Unspecified" ? profile.gender : ""
+  );
+  const [phone, setPhone] = useState(
+    profile?.phone && !profile.phone.includes("0000") && !profile.phone.includes("1111") ? profile.phone : ""
+  );
   const [knownConditions, setKnownConditions] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState("");
+
+  useEffect(() => {
+    if (profile?.fullName && !fullName) setFullName(profile.fullName);
+    if (profile?.dateOfBirth && profile.dateOfBirth !== "1995-01-01" && !dateOfBirth) setDateOfBirth(profile.dateOfBirth);
+    if (profile?.gender && profile.gender !== "Unspecified" && !gender) setGender(profile.gender);
+    if (profile?.phone && !profile.phone.includes("0000") && !phone) setPhone(profile.phone);
+  }, [profile]);
 
   const validate = () => {
     const errs: Record<string, string> = {};

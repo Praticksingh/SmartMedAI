@@ -110,19 +110,6 @@ export const validateAndProcessQRScan = (
   );
 
   if (visitIndex === -1) {
-    // Search default mock tokens
-    const dept = db.departments.find((d) => d.nextTokens.includes(token) || d.nowServing === token);
-    if (dept) {
-      logEvent(staffName, "CHECKIN_SUCCESS", `Patient checked in with token ${token} at ${dept.name} entrance scanner.`);
-      return {
-        success: true,
-        message: `Check-in Verified! Patient ${token} successfully checked in for ${dept.name}.`,
-        tokenNumber: token,
-        departmentCode: dept.code,
-        status: "CHECKED_IN",
-      };
-    }
-
     logEvent(staffName, "CHECKIN_FAILED", `Check-in failed for token ${token}: Active visit token not found.`);
     return {
       success: false,

@@ -74,30 +74,13 @@ export const StaffStation: React.FC = () => {
         duration: "Just Started"
       };
     } else {
-      const fallbackNames: Record<string, string> = {
-        "C-027": "Subhash K. (Anonymized)",
-        "P-044": "Rohan M. (Anonymized)",
-        "D-009": "Kiran J. (Anonymized)",
-        "O-018": "Meena S. (Anonymized)"
-      };
-      
-      const priorityCodes: Record<string, "p1" | "p2" | "p3" | "p4"> = {
-        "C-027": "p2",
-        "P-044": "p3",
-        "D-009": "p4",
-        "O-018": "p3"
-      };
-
-      const priorityTexts = { p1: "P1 Critical", p2: "P2 High", p3: "P3 Moderate", p4: "P4 Routine" };
-      const code = priorityCodes[dept.nowServing] || "p4";
-
       currentPatient = {
         token: dept.nowServing,
-        priority: code,
-        priorityText: priorityTexts[code],
-        name: fallbackNames[dept.nowServing] || "Patient (Anonymized)",
-        symptom: "Symptom Intake Complete",
-        duration: "12 Mins"
+        priority: "p4",
+        priorityText: "P4 Routine",
+        name: "Patient (Anonymized)",
+        symptom: "Consultation in progress",
+        duration: "In Progress"
       };
     }
   }
@@ -120,18 +103,13 @@ export const StaffStation: React.FC = () => {
         };
       }
       
-      const tokenChar = token.slice(0, 1);
-      const isCritical = token.endsWith("8");
-      const priorityCode = isCritical ? "p1" : tokenChar === "C" ? "p2" : tokenChar === "P" ? "p2" : "p3";
-      const priorityTexts = { p1: "P1 Critical", p2: "P2 High", p3: "P3 Moderate", p4: "P4 Routine" };
-      
       return {
         token,
-        priority: priorityCode as any,
-        priorityText: priorityTexts[priorityCode as "p1" | "p2" | "p3"],
-        wait: "Est. 15 Mins",
+        priority: "p4" as const,
+        priorityText: "P4 Routine",
+        wait: "Waiting",
         status: "WAITING",
-        symptom: "Symptom Intake Complete",
+        symptom: "Awaiting Intake",
         isAging: false,
         waitedMinutes: 0
       };

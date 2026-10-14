@@ -38,46 +38,9 @@ interface MockAuthDB {
 }
 
 const AUTH_KEY = "opdflow_auth";
-const CURRENT_SCHEMA = 2;
+const CURRENT_SCHEMA = 3;
 
-// ─── Pre-seeded demo accounts ────────────────────────────────────────────────
-const SEED_USERS: MockUser[] = [
-  { id: "user_patient_demo", email: "patient@demo.com", role: "PATIENT",         createdAt: "2026-01-01T00:00:00Z" },
-  { id: "user_staff_demo",   email: "staff@demo.com",   role: "DEPARTMENT_STAFF", createdAt: "2026-01-01T00:00:00Z" },
-  { id: "user_admin_demo",   email: "admin@demo.com",   role: "HOSPITAL_ADMIN",   createdAt: "2026-01-01T00:00:00Z" },
-];
-
-const SEED_PROFILES: MockProfile[] = [
-  {
-    id: "prof_patient_demo",
-    userId: "user_patient_demo",
-    fullName: "Aarav Sharma",
-    dateOfBirth: "1990-04-15",
-    gender: "Male",
-    phone: "+91 98765 43210",
-    isProfileComplete: true,
-  },
-  {
-    id: "prof_staff_demo",
-    userId: "user_staff_demo",
-    fullName: "Sister Priya Nair",
-    dateOfBirth: "1985-08-22",
-    gender: "Female",
-    phone: "+91 99887 76655",
-    isProfileComplete: true,
-  },
-  {
-    id: "prof_admin_demo",
-    userId: "user_admin_demo",
-    fullName: "Dr. Alok Sen",
-    dateOfBirth: "1975-12-01",
-    gender: "Male",
-    phone: "+91 97654 32109",
-    isProfileComplete: true,
-  },
-];
-
-// Consolidated seed passwords (passwords stored in DB — demo only, never production)
+// Consolidated seed passwords helper
 const hashPw = (pw: string): string => {
   let hash = 0;
   for (let i = 0; i < pw.length; i++) {
@@ -87,18 +50,12 @@ const hashPw = (pw: string): string => {
   return `h_${Math.abs(hash).toString(16)}`;
 };
 
-const SEED_PASSWORDS: Record<string, string> = {
-  "patient@demo.com": "demo1234",
-  "staff@demo.com":   "demo1234",
-  "admin@demo.com":   "demo1234",
-};
-
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 const freshDB = (): MockAuthDB => ({
   schemaVersion: CURRENT_SCHEMA,
-  users: SEED_USERS,
-  profiles: SEED_PROFILES,
-  passwords: SEED_PASSWORDS,
+  users: [],
+  profiles: [],
+  passwords: {},
   sessions: null,
 });
 
@@ -108,26 +65,26 @@ const readAuthDB = (): MockAuthDB => {
     if (!raw) throw new Error("empty");
     const db = JSON.parse(raw) as MockAuthDB;
 
-    // Schema migration: v1 had separate passwords key — merge into DB
+    // Schema migration & purge demo data: v3 cleans out demo accounts
     if (!db.schemaVersion || db.schemaVersion < CURRENT_SCHEMA) {
       const oldPasswords = JSON.parse(localStorage.getItem("opdflow_auth_passwords") ?? "{}");
+      const cleanedUsers = (db.users || []).filter(u => !u.email.includes("demo.com") && !u.id.includes("demo"));
+      const cleanedProfiles = (db.profiles || []).filter(p => !p.id.includes("demo") && !p.userId.includes("demo"));
+      const cleanedPasswords = { ...oldPasswords, ...(db.passwords || {}) };
+      delete cleanedPasswords["patient@demo.com"];
+      delete cleanedPasswords["staff@demo.com"];
+      delete cleanedPasswords["admin@demo.com"];
+
       const migrated: MockAuthDB = {
         schemaVersion: CURRENT_SCHEMA,
-        users: db.users ?? SEED_USERS,
-        profiles: db.profiles ?? SEED_PROFILES,
-        passwords: { ...SEED_PASSWORDS, ...oldPasswords, ...(db as any).passwords },
-        sessions: db.sessions ?? null,
+        users: cleanedUsers,
+        profiles: cleanedProfiles,
+        passwords: cleanedPasswords,
+        sessions: db.sessions && cleanedUsers.some(u => u.id === db.sessions?.userId) ? db.sessions : null,
       };
       localStorage.setItem(AUTH_KEY, JSON.stringify(migrated));
-      localStorage.removeItem("opdflow_auth_passwords"); // clean up old key
+      localStorage.removeItem("opdflow_auth_passwords");
       return migrated;
-    }
-
-    // Always ensure seed passwords are present (resilient to manual edits)
-    const merged = { ...SEED_PASSWORDS, ...db.passwords };
-    if (JSON.stringify(merged) !== JSON.stringify(db.passwords)) {
-      db.passwords = merged;
-      localStorage.setItem(AUTH_KEY, JSON.stringify(db));
     }
 
     return db;

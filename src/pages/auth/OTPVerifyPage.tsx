@@ -88,9 +88,6 @@ export const OTPVerifyPage: React.FC = () => {
               <h1 className="text-xl font-bold text-slate-800 mb-1">Verify Your Phone</h1>
               <p className="text-sm text-slate-400 mb-6">
                 We sent a 6-digit code to your registered mobile number.
-                <span className="block mt-1 text-xs text-teal-600 font-semibold">
-                  (Demo: enter any 6 digits to verify)
-                </span>
               </p>
 
               {/* OTP input boxes */}

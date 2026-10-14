@@ -14,6 +14,7 @@ import {
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { mockRequestPasswordReset, mockResetPassword } from "../../utils/mockAuth";
+import { firebaseSendPasswordReset } from "../../firebase/authService";
 
 type Step = "email" | "reset" | "done";
 
@@ -36,6 +37,7 @@ export const ForgotPasswordPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const strength = getPasswordStrength(newPassword);
@@ -46,11 +48,23 @@ export const ForgotPasswordPage: React.FC = () => {
     if (!email) { setError("Please enter your email address."); return; }
 
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600)); // simulated network
+    const fbRes = await firebaseSendPasswordReset(email);
+    if (fbRes.ok) {
+      setIsLoading(false);
+      setSuccessMessage("Password reset email sent! Please check your inbox for the reset link.");
+      setStep("done");
+      setTimeout(() => navigate("/login"), 3500);
+      return;
+    }
+
+    // Fallback for offline hackathon/demo mode
     const result = mockRequestPasswordReset(email);
     setIsLoading(false);
 
-    if ("error" in result) { setError(result.error); return; }
+    if ("error" in result) {
+      setError(fbRes.error || result.error);
+      return;
+    }
     setStep("reset");
   };
 
@@ -195,9 +209,11 @@ export const ForgotPasswordPage: React.FC = () => {
               <div className="h-16 w-16 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-9 w-9 text-teal-600" />
               </div>
-              <h2 className="text-xl font-bold text-slate-800">Password Updated!</h2>
-              <p className="text-sm text-slate-400">
-                Your password has been reset. Redirecting you to sign in…
+              <h2 className="text-xl font-bold text-slate-800">
+                {successMessage ? "Reset Link Sent!" : "Password Updated!"}
+              </h2>
+              <p className="text-sm text-slate-500">
+                {successMessage || "Your password has been reset. Redirecting you to sign in…"}
               </p>
             </div>
           )}

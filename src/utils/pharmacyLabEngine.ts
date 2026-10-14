@@ -108,20 +108,11 @@ export const createLabOrder = (
 export const getActivePharmacyOrders = (): PharmacyOrder[] => {
   if (typeof window === "undefined") return [];
   const raw = localStorage.getItem(PHARMACY_STORAGE_KEY);
-  if (!raw) {
-    // Default mock initial order
-    return [{
-      id: "pharm_default",
-      tokenNumber: "PHARM-104",
-      medicines: ["Paracetamol 500mg", "Amoxicillin 250mg", "ORSL Hydration Pack"],
-      status: "WAITING_DISPENSARY",
-      counterRoom: "Dispensary Counter 3 (Ground Floor)",
-      createdAt: "16:30"
-    }];
-  }
+  if (!raw) return [];
   try {
-    return JSON.parse(raw);
-  } catch (e) {
+    const orders = JSON.parse(raw) as PharmacyOrder[];
+    return orders.filter(o => o.id !== "pharm_default");
+  } catch {
     return [];
   }
 };
@@ -132,19 +123,11 @@ export const getActivePharmacyOrders = (): PharmacyOrder[] => {
 export const getActiveLabOrders = (): LabOrder[] => {
   if (typeof window === "undefined") return [];
   const raw = localStorage.getItem(LAB_STORAGE_KEY);
-  if (!raw) {
-    return [{
-      id: "lab_default",
-      tokenNumber: "LAB-042",
-      tests: ["Complete Blood Count (CBC)", "Serum Creatinine"],
-      status: "SAMPLE_PENDING",
-      counterRoom: "Central Pathology Lab (Room 102)",
-      createdAt: "16:15"
-    }];
-  }
+  if (!raw) return [];
   try {
-    return JSON.parse(raw);
-  } catch (e) {
+    const orders = JSON.parse(raw) as LabOrder[];
+    return orders.filter(o => o.id !== "lab_default");
+  } catch {
     return [];
   }
 };

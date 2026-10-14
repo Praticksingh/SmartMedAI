@@ -136,8 +136,13 @@ export const PublicWaitingDisplay: React.FC = () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => speakMedicalCall(currentDept.nowServing || "C-028", t(`dept.${currentDept.code}`) || currentDept.name, currentDept.room, tvLang, speechRate)}
-            title="Simulate Voice Announcement"
+            onClick={() => {
+              if (currentDept.nowServing) {
+                speakMedicalCall(currentDept.nowServing, t(`dept.${currentDept.code}`) || currentDept.name, currentDept.room, tvLang, speechRate);
+              }
+            }}
+            disabled={!currentDept.nowServing}
+            title={currentDept.nowServing ? "Replay Voice Announcement" : "No token currently being served"}
           >
             <Volume2 className="h-4 w-4 text-teal-600 mr-1" />
             <span>Replay Voice</span>

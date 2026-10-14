@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import {
+  firebaseSignIn,
+  firebaseSignInWithGoogle,
+  firebaseSignUp,
+  firebaseSignOut,
+  subscribeToFirebaseAuth,
+  saveStoredProfile,
+} from "../firebase/authService";
+import {
   getMockSession,
   mockSignIn,
   mockSignOut,
@@ -10,7 +18,7 @@ import {
   type UserRole,
   type SignUpPayload,
 } from "../utils/mockAuth";
-import { apiClient, setStoredToken, ApiException } from "../api/client";
+import { apiClient, setStoredToken } from "../api/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AuthContextValue {
@@ -19,8 +27,8 @@ interface AuthContextValue {
   role: UserRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  // Returns role alongside error so callers can navigate without re-reading context
   signIn: (email: string, password: string) => Promise<{ error?: string; role?: UserRole; isLocked?: boolean }>;
+  signInWithGoogle: (preferredRole?: UserRole) => Promise<{ error?: string; role?: UserRole }>;
   signUp: (payload: SignUpPayload) => Promise<{ error?: string }>;
   signOut: () => void;
   updateProfile: (updates: Partial<Omit<MockProfile, "id" | "userId">>) => Promise<{ error?: string }>;
@@ -35,153 +43,131 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<MockProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Bootstrap: restore session from API or localStorage on mount
+  // Bootstrap: restore session from Firebase or client session on mount
   useEffect(() => {
     let isMounted = true;
-    const bootstrap = async () => {
-      try {
-        const remoteUser = await apiClient.auth.me();
-        if (remoteUser?.user && isMounted) {
-          const u: MockUser = {
-            id: remoteUser.user.id,
-            email: remoteUser.user.email,
-            role: remoteUser.user.role as UserRole,
-            createdAt: remoteUser.user.createdAt || new Date().toISOString(),
-          };
-          setUser(u);
-          setProfile({
-            id: `prof_${u.id}`,
-            userId: u.id,
-            fullName: remoteUser.user.profile?.fullName || remoteUser.user.email.split("@")[0],
-            dateOfBirth: "1995-01-01",
-            gender: "Unspecified",
-            phone: "+91 00000 00000",
-            isProfileComplete: true,
-          });
-          setIsLoading(false);
-          return;
-        }
-      } catch {
-        // Fallback to local session
-      }
 
-      if (isMounted) {
-        const session = getMockSession();
-        if (session) {
-          setUser(session.user);
-          setProfile(session.profile);
+    const unsubscribeFb = subscribeToFirebaseAuth((fbUser, fbProfile) => {
+      if (!isMounted) return;
+
+      if (fbUser) {
+        setUser(fbUser);
+        setProfile(fbProfile);
+        setIsLoading(false);
+      } else {
+        const localSession = getMockSession();
+        if (localSession) {
+          setUser(localSession.user);
+          setProfile(localSession.profile);
+        } else {
+          setUser(null);
+          setProfile(null);
         }
         setIsLoading(false);
       }
-    };
+    });
 
-    bootstrap();
     return () => {
       isMounted = false;
+      unsubscribeFb();
     };
   }, []);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<{ error?: string; role?: UserRole; isLocked?: boolean }> => {
-      try {
-        const res = await apiClient.auth.login({ email, password });
-        if (res?.token && res?.user) {
-          setStoredToken(res.token);
-          const u: MockUser = {
-            id: res.user.id,
-            email: res.user.email,
-            role: res.user.role as UserRole,
-            createdAt: res.user.createdAt || new Date().toISOString(),
-          };
-          const p: MockProfile = {
-            id: `prof_${u.id}`,
-            userId: u.id,
-            fullName: res.user.profile?.fullName || email.split("@")[0],
-            dateOfBirth: "1995-01-01",
-            gender: "Unspecified",
-            phone: "+91 00000 00000",
-            isProfileComplete: true,
-          };
-          setUser(u);
-          setProfile(p);
-          return { role: u.role };
-        }
-      } catch (err: any) {
-        if (err instanceof ApiException) {
-          if (err.status === 429 || err.code === "ACCOUNT_LOCKED") {
-            return {
-              error: err.message || "Account temporarily locked due to multiple failed attempts. Try again in 15 minutes.",
-              isLocked: true,
-            };
-          }
-          if (err.status === 401 || err.code === "INVALID_CREDENTIALS") {
-            // Also try mock credentials for offline testing
-            const localResult = mockSignIn(email, password);
-            if (!("error" in localResult)) {
-              setUser(localResult.user);
-              setProfile(localResult.profile);
-              return { role: localResult.user.role };
-            }
-            return { error: err.message || "Invalid credentials." };
-          }
-        }
+      // 1. Primary: Firebase Authentication
+      const fbResult = await firebaseSignIn(email, password);
+      if (fbResult.user && fbResult.role) {
+        setUser(fbResult.user);
+        setProfile(fbResult.profile || null);
+        return { role: fbResult.role };
       }
 
-      // Offline fallback
-      const result = mockSignIn(email, password);
-      if ("error" in result) return { error: result.error };
-      setUser(result.user);
-      setProfile(result.profile);
-      return { role: result.user.role };
+      // If Firebase failed due to wrong password or missing user, report directly
+      if (fbResult.error && !fbResult.error.toLowerCase().includes("api key")) {
+        return { error: fbResult.error };
+      }
+
+      // 2. Offline / Local fallback if Firebase keys are not yet configured in .env
+      const localResult = mockSignIn(email, password);
+      if (!("error" in localResult)) {
+        setUser(localResult.user);
+        setProfile(localResult.profile);
+        return { role: localResult.user.role };
+      }
+
+      return { error: fbResult.error || localResult.error };
+    },
+    []
+  );
+
+  const signInWithGoogle = useCallback(
+    async (preferredRole: UserRole = "PATIENT"): Promise<{ error?: string; role?: UserRole }> => {
+      // 1. Primary: Firebase Google Sign-In
+      const fbResult = await firebaseSignInWithGoogle(preferredRole);
+      if (fbResult.user && fbResult.role) {
+        setUser(fbResult.user);
+        setProfile(fbResult.profile || null);
+        return { role: fbResult.role };
+      }
+
+      // If user cancelled or popup was closed by user
+      if (
+        fbResult.error &&
+        (fbResult.error.toLowerCase().includes("cancelled") ||
+          fbResult.error.toLowerCase().includes("closed") ||
+          fbResult.error.toLowerCase().includes("blocked"))
+      ) {
+        return { error: fbResult.error };
+      }
+
+      // 2. Offline / Local fallback if Firebase keys are not yet configured in .env
+      const demoEmail = `google.user.${Date.now().toString(36)}@hospital.gov.in`;
+      const localResult = mockSignUp({
+        email: demoEmail,
+        password: "GoogleAuthDemo123!",
+        role: preferredRole,
+        fullName: "Google Authenticated User",
+        dateOfBirth: "",
+        gender: "",
+        phone: "",
+      });
+
+      if (!("error" in localResult)) {
+        setUser(localResult.user);
+        setProfile(localResult.profile);
+        return { role: localResult.user.role };
+      }
+
+      return { error: fbResult.error || "Google sign-in failed. Please try again." };
     },
     []
   );
 
   const signUp = useCallback(async (payload: SignUpPayload): Promise<{ error?: string }> => {
-    try {
-      const name = payload.fullName || "User";
-      const nameParts = name.split(" ");
-      const res = await apiClient.auth.register({
-        email: payload.email,
-        password: payload.password,
-        firstName: nameParts[0] || "User",
-        lastName: nameParts.slice(1).join(" ") || "Patient",
-        role: payload.role,
-      });
-
-      if (res?.token && res?.user) {
-        setStoredToken(res.token);
-        const u: MockUser = {
-          id: res.user.id,
-          email: res.user.email,
-          role: res.user.role as UserRole,
-          createdAt: new Date().toISOString(),
-        };
-        const p: MockProfile = {
-          id: `prof_${u.id}`,
-          userId: u.id,
-          fullName: payload.fullName || "",
-          dateOfBirth: payload.dateOfBirth || "",
-          gender: payload.gender || "",
-          phone: payload.phone || "",
-          isProfileComplete: true,
-        };
-        setUser(u);
-        setProfile(p);
-        return {};
-      }
-    } catch {
-      // Fallback
+    // 1. Primary: Firebase Authentication
+    const fbResult = await firebaseSignUp(payload);
+    if (fbResult.user) {
+      setUser(fbResult.user);
+      setProfile(fbResult.profile || null);
+      return {};
     }
 
-    const result = mockSignUp(payload);
-    if ("error" in result) return { error: result.error };
-    setUser(result.user);
-    setProfile(result.profile);
+    // If Firebase error is validation or account collision, report directly
+    if (fbResult.error && !fbResult.error.toLowerCase().includes("api key")) {
+      return { error: fbResult.error };
+    }
+
+    // 2. Offline / Local fallback if Firebase keys are not yet configured in .env
+    const localResult = mockSignUp(payload);
+    if ("error" in localResult) return { error: localResult.error };
+    setUser(localResult.user);
+    setProfile(localResult.profile);
     return {};
   }, []);
 
   const signOut = useCallback(() => {
+    firebaseSignOut().catch(() => {});
     apiClient.auth.logout().catch(() => {});
     setStoredToken(null);
     mockSignOut();
@@ -192,12 +178,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = useCallback(
     async (updates: Partial<Omit<MockProfile, "id" | "userId">>): Promise<{ error?: string }> => {
       if (!user) return { error: "Not authenticated." };
-      const result = mockUpdateProfile(user.id, updates);
-      if ("error" in result) return { error: result.error };
-      setProfile(result);
+
+      const current: MockProfile = profile || {
+        id: `prof_${user.id}`,
+        userId: user.id,
+        fullName: user.email.split("@")[0],
+        dateOfBirth: "",
+        gender: "",
+        phone: "",
+        isProfileComplete: false,
+      };
+
+      const fullName = updates.fullName !== undefined ? updates.fullName : current.fullName;
+      const dateOfBirth = updates.dateOfBirth !== undefined ? updates.dateOfBirth : current.dateOfBirth;
+      const gender = updates.gender !== undefined ? updates.gender : current.gender;
+      const phone = updates.phone !== undefined ? updates.phone : current.phone;
+
+      const isProfileComplete = Boolean(
+        fullName.trim() &&
+        dateOfBirth &&
+        gender &&
+        phone.trim()
+      );
+
+      const updatedProfile: MockProfile = {
+        ...current,
+        fullName,
+        dateOfBirth,
+        gender,
+        phone,
+        isProfileComplete,
+      };
+
+      saveStoredProfile(user.id, {
+        role: user.role,
+        fullName: updatedProfile.fullName,
+        dateOfBirth: updatedProfile.dateOfBirth,
+        gender: updatedProfile.gender,
+        phone: updatedProfile.phone,
+        isProfileComplete,
+        email: user.email,
+      });
+
+      setProfile(updatedProfile);
+      mockUpdateProfile(user.id, { fullName, dateOfBirth, gender, phone });
       return {};
     },
-    [user]
+    [user, profile]
   );
 
   // useMemo prevents unnecessary re-renders of all context consumers
@@ -209,11 +236,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       isAuthenticated: !!user,
       signIn,
+      signInWithGoogle,
       signUp,
       signOut,
       updateProfile,
     }),
-    [user, profile, isLoading, signIn, signUp, signOut, updateProfile]
+    [user, profile, isLoading, signIn, signInWithGoogle, signUp, signOut, updateProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

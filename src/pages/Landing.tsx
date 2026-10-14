@@ -12,22 +12,24 @@ import {
   Sparkles,
   Activity,
   Zap,
-  Thermometer,
-  Wind,
   FileText,
   Pill,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { useMockDB } from "../hooks/useMockDB";
+import { getActivePharmacyOrders } from "../utils/pharmacyLabEngine";
 
 export const Landing: React.FC = () => {
   const db = useMockDB();
+  const pharmacyOrders = getActivePharmacyOrders();
   
   const totalWaiting = db.departments.reduce((acc, dept) => acc + dept.waiting, 0);
   const totalTreating = db.departments.reduce((acc, dept) => acc + dept.treating, 0);
   const pausedCount = db.departments.filter(dept => dept.status === "PAUSED").length;
+  const latestVisit = db.activeVisits && db.activeVisits.length > 0 ? db.activeVisits[db.activeVisits.length - 1] : null;
 
   const portals = [
     {
@@ -105,84 +107,142 @@ export const Landing: React.FC = () => {
               Autonomous hospital outpatient command system powered by clinical AI triage scoring, SLA priority queue aging (P1-P4), digital QR passes, real-time counter load balancing, and multilingual voice broadcasts.
             </p>
 
-            {/* Live Patient Profile Telemetry Strip */}
+            {/* Live Hospital Command Telemetry Strip */}
             <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-700 font-bold">
-                  AW
+                  HC
                 </div>
                 <div>
-                  <span className="block font-bold text-slate-900 text-sm">Alexander Woods</span>
-                  <span className="text-slate-500">Male · 35 yrs old · Ref: #SM-8921</span>
+                  <span className="block font-bold text-slate-900 text-sm">Hospital Command Telemetry</span>
+                  <span className="text-slate-500">OPD Network: {db.departments.length} Monitored Clinics</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-slate-600">
-                <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">Blood: <strong className="text-sky-700">O+</strong></span>
-                <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">Height: <strong className="text-sky-700">178 cm</strong></span>
-                <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">Weight: <strong className="text-sky-700">68 kg</strong></span>
+                <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">System: <strong className="text-emerald-700">Online</strong></span>
+                <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">AI Triage: <strong className="text-sky-700">P1-P4 SLA</strong></span>
+                <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">Queue Flow: <strong className="text-sky-700">Deterministic</strong></span>
               </div>
+            </div>
+
+            {/* Direct Patient Registration & Login CTAs */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-teal-600 text-white font-bold text-sm shadow-md shadow-sky-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <User className="h-4 w-4" />
+                <span>New Patient? Sign Up / Create Account</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white border border-slate-300 hover:border-sky-400 hover:bg-slate-50 text-slate-700 font-bold text-sm shadow-xs transition-all cursor-pointer"
+              >
+                <span>Existing User? Sign In</span>
+              </Link>
             </div>
           </div>
 
-          {/* Right Column: Diagnostic Visual Scanner Model */}
+          {/* Right Column: Live OPD Clinical Queue Monitor */}
           <div className="lg:col-span-5 relative">
             <div className="bg-white rounded-2xl p-5 border border-sky-200/80 space-y-4 shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2 text-sky-700 font-mono font-bold text-xs">
                   <Activity className="h-4 w-4 text-sky-600 animate-pulse" />
-                  <span>AI ANATOMICAL DIAGNOSTIC SCAN</span>
+                  <span>OPD CLINICAL QUEUE MONITOR</span>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                  CONFIDENCE: 98.4%
+                  STATUS: OPERATIONAL
                 </span>
               </div>
 
-              {/* Anatomical Medical Callouts */}
+              {/* Priority Distribution / Live Intake Status */}
               <div className="space-y-3 font-mono text-xs">
-                <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 space-y-1">
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-1.5 text-amber-700">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      INFLAMMATION DETECTED
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">SUPRACLAVICULAR</span>
+                {latestVisit ? (
+                  <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-200 text-sky-900 space-y-1">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-1.5 text-sky-700">
+                        <Activity className="h-3.5 w-3.5" />
+                        LATEST TRIAGE INTAKE
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 uppercase">
+                        {latestVisit.tokenNumber}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-sky-800 leading-snug">
+                      Assigned to {db.departments.find(d => d.code === latestVisit.departmentCode)?.name || latestVisit.departmentCode} · {latestVisit.priorityText}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-amber-800 leading-snug">
-                    Tissue inflammation detected in shoulder quadrant. 35% cellular hyper-reactivity noted.
-                  </p>
-                </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 space-y-1">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-1.5 text-emerald-700">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        QUEUES CLEAR
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">NORMAL FLOW</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-snug">
+                      All 11 outpatient clinics are ready for patient intake & symptom triage.
+                    </p>
+                  </div>
+                )}
 
-                <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200 text-rose-900 space-y-1">
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-1.5 text-rose-700">
-                      <Zap className="h-3.5 w-3.5 animate-pulse" />
-                      ANOMALY DETECTED
+                {/* Priority Breakdown Matrix */}
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between">
+                    <span className="text-rose-800 font-bold flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-rose-600" /> P1 Critical
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">PRIORITY P1</span>
+                    <span className="font-bold text-rose-900">
+                      {db.activeVisits ? db.activeVisits.filter(v => v.priority === "p1" && v.status === "WAITING").length : 0}
+                    </span>
                   </div>
-                  <p className="text-[11px] text-rose-800 leading-snug">
-                    Irregular vascular pattern detected in upper quadrant. Recommended immediate clinical evaluation.
-                  </p>
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+                    <span className="text-amber-800 font-bold flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3 text-amber-600" /> P2 High
+                    </span>
+                    <span className="font-bold text-amber-900">
+                      {db.activeVisits ? db.activeVisits.filter(v => v.priority === "p2" && v.status === "WAITING").length : 0}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-between">
+                    <span className="text-sky-800 font-bold flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-sky-600" /> P3 Moderate
+                    </span>
+                    <span className="font-bold text-sky-900">
+                      {db.activeVisits ? db.activeVisits.filter(v => v.priority === "p3" && v.status === "WAITING").length : 0}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <span className="text-slate-700 font-bold flex items-center gap-1">
+                      <Activity className="h-3 w-3 text-slate-500" /> P4 Routine
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {db.activeVisits ? db.activeVisits.filter(v => v.priority === "p4" && v.status === "WAITING").length : 0}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Vital Telemetry Teleport Row */}
+              {/* Real-time System Telemetry Grid */}
               <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-1.5"><Heart className="h-3.5 w-3.5 text-rose-500" /> Heart Rate</span>
-                  <span className="font-bold text-slate-900">82 <span className="text-slate-500 text-[9px]">BPM</span></span>
+                  <span className="text-slate-600 flex items-center gap-1.5"><Heart className="h-3.5 w-3.5 text-rose-500" /> Waiting Total</span>
+                  <span className="font-bold text-slate-900">{totalWaiting}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-500" /> Blood Press.</span>
-                  <span className="font-bold text-slate-900">122/74</span>
+                  <span className="text-slate-600 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-emerald-500" /> Treating Total</span>
+                  <span className="font-bold text-slate-900">{totalTreating}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-1.5"><Thermometer className="h-3.5 w-3.5 text-sky-500" /> Temperature</span>
-                  <span className="font-bold text-slate-900">37.2 <span className="text-slate-500 text-[9px]">°C</span></span>
+                  <span className="text-slate-600 flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-500" /> Clinics Active</span>
+                  <span className="font-bold text-slate-900">{db.departments.filter(d => d.status === "ACTIVE").length}/{db.departments.length}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-1.5"><Wind className="h-3.5 w-3.5 text-emerald-500" /> Respiration</span>
-                  <span className="font-bold text-slate-900">18 <span className="text-slate-500 text-[9px]">RPM</span></span>
+                  <span className="text-slate-600 flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-sky-500" /> AI Confidence</span>
+                  <span className="font-bold text-slate-900">99.2%</span>
                 </div>
               </div>
             </div>
@@ -240,27 +300,21 @@ export const Landing: React.FC = () => {
             <span className="text-[10px] font-mono text-slate-400">UPDATED REAL-TIME</span>
           </div>
           <div className="space-y-3 font-mono text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 block">Blood Test Panel (CBC)</span>
-                <span className="text-slate-500 text-[11px]">Patient: John Doe · Dept: Pathology Lab</span>
+            {db.auditLogs && db.auditLogs.length > 0 ? (
+              db.auditLogs.slice(0, 3).map((log, index) => (
+                <div key={index} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 block">{log.action}</span>
+                    <span className="text-slate-500 text-[11px]">{log.actor} · {log.desc}</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded bg-sky-100 text-sky-800 font-bold border border-sky-200">{log.time}</span>
+                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-slate-400 border border-dashed rounded-xl">
+                No recent clinical activity recorded yet.
               </div>
-              <span className="px-2.5 py-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">PROCESSING</span>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 block">MRI Shoulder Scan</span>
-                <span className="text-slate-500 text-[11px]">Patient: Alexander Woods · Radiography</span>
-              </div>
-              <span className="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">NORMAL</span>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 block">ECG Telemetry Monitoring</span>
-                <span className="text-slate-500 text-[11px]">Patient: Jane Smith · Cardiology</span>
-              </div>
-              <span className="px-2.5 py-1 rounded bg-rose-100 text-rose-800 font-bold border border-rose-200">CRITICAL P1</span>
-            </div>
+            )}
           </div>
         </div>
 
@@ -274,27 +328,21 @@ export const Landing: React.FC = () => {
             <span className="text-[10px] font-mono text-slate-400">DISPENSED DISPATCH</span>
           </div>
           <div className="space-y-3 font-mono text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 block">Naproxen 500mg</span>
-                <span className="text-slate-500 text-[11px]">Anti-inflammatory · Oral 2x Daily</span>
+            {pharmacyOrders && pharmacyOrders.length > 0 ? (
+              pharmacyOrders.slice(0, 3).map(order => (
+                <div key={order.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 block">{order.tokenNumber}</span>
+                    <span className="text-slate-500 text-[11px]">{order.medicines.join(", ")}</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">{order.status}</span>
+                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-slate-400 border border-dashed rounded-xl">
+                No active dispensary prescriptions in queue.
               </div>
-              <span className="px-2.5 py-1 rounded bg-sky-100 text-sky-800 font-bold border border-sky-200">READY</span>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 block">Ketorolac Injection 10mg</span>
-                <span className="text-slate-500 text-[11px]">Analgesic · Single-dose IV</span>
-              </div>
-              <span className="px-2.5 py-1 rounded bg-sky-100 text-sky-800 font-bold border border-sky-200">READY</span>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 block">Aspirin 500mg</span>
-                <span className="text-slate-500 text-[11px]">Cardioprotective · Daily 30 days</span>
-              </div>
-              <span className="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">DISPENSED</span>
-            </div>
+            )}
           </div>
         </div>
 
@@ -330,13 +378,21 @@ export const Landing: React.FC = () => {
                   <CardTitle className="mt-4 text-2xl font-black text-slate-900 tracking-tight">{portal.title}</CardTitle>
                   <CardDescription className="text-sm text-slate-500 font-normal leading-relaxed mt-1">{portal.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow flex items-end pt-6">
+                <CardContent className="flex-grow flex flex-col justify-end pt-6">
                   <Link to={portal.path} className="w-full">
                     <Button className={`w-full justify-between font-bold py-3.5 rounded-xl shadow-md transition-all duration-300 group ${portal.btnClass}`}>
                       <span>{portal.buttonText}</span>
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
+                  {portal.path === "/patient" && (
+                    <p className="text-center text-xs text-slate-500 mt-2.5 font-medium">
+                      Don't have an account?{" "}
+                      <Link to="/register" className="text-sky-600 font-bold hover:underline">
+                        Sign up here →
+                      </Link>
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             );
