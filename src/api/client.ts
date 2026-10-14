@@ -6,8 +6,12 @@
 
 import { enqueueOfflineAction } from "../utils/offlineSyncEngine";
 
-const API_BASE = "/api/v1";
+const rawBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE = rawBase
+  ? (rawBase.endsWith("/api/v1") ? rawBase.replace(/\/$/, "") : `${rawBase.replace(/\/$/, "")}/api/v1`)
+  : "/api/v1";
 const TOKEN_KEY = "smartmed_access_token";
+
 
 export interface ApiError {
   code: string;

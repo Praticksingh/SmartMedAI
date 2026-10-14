@@ -23,16 +23,23 @@ import { queueRouter } from "./routes/queues.js";
 import { telemedicineRouter } from "./routes/telemedicine.js";
 
 const app = express();
-const allowedOrigins = [appConfig.frontendUrl, appConfig.backendUrl, "http://localhost:5173", "http://localhost:4000"];
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
         return;
       }
-      callback(new Error("CORS policy denied for this origin"));
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      const isAllowed = appConfig.allowedOrigins.some(
+        (allowed) => allowed === normalizedOrigin || normalizedOrigin.endsWith(".vercel.app")
+      );
+      if (isAllowed || appConfig.nodeEnv !== "production") {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
     },
     credentials: true,
   })
@@ -51,7 +58,10 @@ app.use(
   })
 );
 
+// Liveness & readiness routes
+app.use("/health", healthRouter);
 app.use("/api/v1", healthRouter);
+
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/patients", patientRouter);
 app.use("/api/v1/doctors", doctorRouter);
@@ -69,9 +79,10 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  app.listen(appConfig.port, () => {
-    console.log(`DevFusion backend listening on http://localhost:${appConfig.port}`);
+  app.listen(appConfig.port, "0.0.0.0", () => {
+    console.log(`DevFusion backend listening on port ${appConfig.port} (${appConfig.nodeEnv})`);
   });
 }
+
 
 export default app;

@@ -29,7 +29,7 @@ export const auth: Auth = getAuth(app);
 let analytics: Analytics | null = null;
 if (typeof window !== "undefined") {
   isSupported()
-    .then((supported) => {
+    .then((supported: boolean) => {
       if (supported) {
         analytics = getAnalytics(app);
       }
