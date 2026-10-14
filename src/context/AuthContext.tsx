@@ -83,12 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { role: fbResult.role };
       }
 
-      // If Firebase failed due to wrong password or missing user, report directly
-      if (fbResult.error && !fbResult.error.toLowerCase().includes("api key")) {
-        return { error: fbResult.error };
-      }
-
-      // 2. Offline / Local fallback if Firebase keys are not yet configured in .env
+      // 2. Demo accounts / Offline fallback (for demo accounts: patient@demo.com, staff@demo.com, admin@demo.com)
       const localResult = mockSignIn(email, password);
       if (!("error" in localResult)) {
         setUser(localResult.user);
@@ -96,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { role: localResult.user.role };
       }
 
+      // 3. Return Firebase error or local error
       return { error: fbResult.error || localResult.error };
     },
     []
