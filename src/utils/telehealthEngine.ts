@@ -16,13 +16,15 @@ export interface VirtualRoomSession {
 
 /**
  * Generates a secure virtual video consultation room link
+ * Uses high-availability Jitsi Meet WebRTC infrastructure for instant peer-to-peer video.
  */
 export const generateVirtualRoomUrl = (
   tokenNumber: string,
   departmentCode: string
 ): VirtualRoomSession => {
   const sanitizedToken = tokenNumber.replace(/[^a-zA-Z0-9-]/g, "");
-  const roomUrl = `https://telehealth.opdflow.ai/room/${departmentCode}-${sanitizedToken}`;
+  const roomName = `SmartMedAI-${departmentCode}-${sanitizedToken}`;
+  const roomUrl = `https://meet.jit.si/${encodeURIComponent(roomName)}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
 
   return {
     roomUrl,

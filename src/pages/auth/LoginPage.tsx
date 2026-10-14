@@ -152,21 +152,22 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-900/5">
-          {/* Role Tabs */}
-          <div className="flex border-b border-slate-200 bg-slate-50/70">
+        {/* Skeuomorphic Hardware Console Card */}
+        <div className="skeuo-card p-6 sm:p-8 relative border border-white/95">
+          <span className="skeuo-rivet absolute top-3 left-3" />
+          <span className="skeuo-rivet absolute top-3 right-3" />
+          <span className="skeuo-rivet absolute bottom-3 left-3" />
+          <span className="skeuo-rivet absolute bottom-3 right-3" />
+
+          {/* Role Tabs - Skeuomorphic Tab Track */}
+          <div className="skeuo-tab-track mb-6">
             {(Object.keys(TAB_CONFIG) as LoginTab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => handleTabSwitch(t)}
                 className={`
-                  flex-1 flex items-center justify-center gap-1.5 py-3.5 text-xs font-mono font-bold uppercase tracking-wider
-                  transition-all duration-200 border-b-2 cursor-pointer
-                  ${activeTab === t
-                    ? "border-sky-600 text-sky-700 bg-white"
-                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60"
-                  }
+                  flex-1 skeuo-tab-btn justify-center text-xs font-mono font-bold uppercase tracking-wider
+                  ${activeTab === t ? "skeuo-tab-btn-active" : "hover:text-slate-900"}
                 `}
               >
                 {TAB_CONFIG[t].icon}
@@ -176,36 +177,37 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Form */}
-          <div className="p-8 space-y-6">
+          <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">{tab.roleLabel}</h1>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight skeuo-embossed-text">{tab.roleLabel}</h1>
                 {activeTab === "patient" && (
                   <Link
                     to="/register"
-                    className="text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-full border border-sky-200 transition-colors shadow-xs"
+                    className="skeuo-btn skeuo-btn-secondary text-xs font-bold text-sky-800 px-3 py-1.5"
                   >
-                    + Sign Up / Register
+                    + Register
                   </Link>
                 )}
               </div>
               <p className="text-xs text-slate-500 mt-1 font-medium">
                 {tab.helperText}{" "}
                 {activeTab === "patient" && (
-                  <Link to="/register" className="text-sky-600 font-bold hover:underline">
+                  <Link to="/register" className="text-sky-700 font-bold hover:underline">
                     Register here
                   </Link>
                 )}
               </p>
             </div>
 
-            {/* Security Attempt Limit Info Badge */}
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 flex items-center justify-between">
-              <span className="text-slate-500 flex items-center gap-1.5">
+            {/* Security Attempt Limit Info Badge - Inset Well */}
+            <div className="p-3 rounded-xl skeuo-inset text-xs font-mono text-slate-700 flex items-center justify-between font-bold">
+              <span className="text-slate-600 flex items-center gap-1.5">
+                <span className="skeuo-led skeuo-led-cyan" />
                 <ShieldAlert className="h-4 w-4 text-sky-600" />
                 SECURITY RULE:
               </span>
-              <span className="text-amber-700 font-bold">MAX 3 FAILED ATTEMPTS</span>
+              <span className="text-amber-800 font-bold">MAX 3 FAILED ATTEMPTS</span>
             </div>
 
             {/* Google Quick Sign-In (Patients Only) */}
@@ -215,9 +217,9 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading || isGoogleLoading || isLocked}
-                  className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-semibold text-xs uppercase tracking-wider shadow-sm transition-all duration-150 disabled:opacity-60 cursor-pointer group"
+                  className="w-full skeuo-btn skeuo-btn-secondary py-2.5 px-4 text-xs font-bold uppercase tracking-wider disabled:opacity-60 cursor-pointer group"
                 >
-                  <svg className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 mr-2 shrink-0 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -240,9 +242,9 @@ export const LoginPage: React.FC = () => {
 
                 {/* Divider */}
                 <div className="relative flex items-center justify-center">
-                  <div className="border-t border-slate-200 w-full" />
-                  <span className="bg-white px-3 text-[11px] font-mono uppercase text-slate-400">or sign in with email</span>
-                  <div className="border-t border-slate-200 w-full" />
+                  <div className="border-t border-slate-300 w-full" />
+                  <span className="bg-[#edf2f8] px-3 text-[11px] font-mono uppercase text-slate-500 font-bold">or sign in with email</span>
+                  <div className="border-t border-slate-300 w-full" />
                 </div>
               </>
             )}
@@ -275,7 +277,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                      className="text-slate-500 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -286,7 +288,7 @@ export const LoginPage: React.FC = () => {
                   <div className="flex justify-end mt-1.5">
                     <Link
                       to="/forgot-password"
-                      className="text-xs text-sky-600 font-semibold hover:underline font-mono"
+                      className="text-xs text-sky-700 font-bold hover:underline font-mono"
                     >
                       Forgot password?
                     </Link>
@@ -309,25 +311,25 @@ export const LoginPage: React.FC = () => {
                 </div>
               )}
 
-              <Button type="submit" isLoading={isLoading} disabled={isLocked} className="w-full mt-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white shadow-md shadow-sky-500/20 font-bold py-2.5 cursor-pointer">
+              <Button type="submit" variant="primary" isLoading={isLoading} disabled={isLocked} className="w-full mt-2 py-3.5 text-base">
                 <span>{isLocked ? "Account Locked" : "Sign In to Dashboard"}</span>
                 <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             </form>
 
             {/* Create New Account / Sign Up Callout */}
-            <div className="pt-5 border-t border-slate-100">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-teal-50/50 border border-sky-100">
+            <div className="pt-4 border-t border-slate-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl skeuo-inset">
                 <div className="text-left">
                   <span className="block text-xs font-bold text-slate-900 uppercase tracking-wide">New Patient to SmartMed?</span>
-                  <span className="block text-[11px] text-slate-500 mt-0.5">Create your digital patient profile in 1 minute</span>
+                  <span className="block text-[11px] text-slate-500 font-medium mt-0.5">Create your digital patient profile in 1 minute</span>
                 </div>
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white text-xs font-bold shadow-sm transition-all shrink-0 cursor-pointer"
+                  className="skeuo-btn skeuo-btn-primary px-4 py-2 text-xs font-bold shrink-0"
                 >
                   <span>Sign Up / Register</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
                 </Link>
               </div>
             </div>

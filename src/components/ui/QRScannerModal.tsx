@@ -6,6 +6,7 @@ import {
   XCircle, 
   Zap
 } from "lucide-react";
+import jsQR from "jsqr";
 import { Dialog } from "./dialog";
 import { Button } from "./button";
 import { validateAndProcessQRScan, generateQRPayload } from "../../utils/qrEngine";
@@ -35,6 +36,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [hasCameraAccess, setHasCameraAccess] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const lastScannedRef = useRef<{ code: string; time: number } | null>(null);
 
   const db = useMockDB();
 
@@ -68,6 +70,48 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     }
   }, [isOpen, activeTab]);
 
+  // Automated frame scanning loop using jsQR
+  useEffect(() => {
+    if (!isOpen || activeTab !== "CAMERA" || !hasCameraAccess) return;
+
+    let isMounted = true;
+    let intervalId: any = null;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    const scanFrame = () => {
+      if (!isMounted || !videoRef.current || videoRef.current.readyState < 2) return;
+      const video = videoRef.current;
+      if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      if (!ctx) return;
+
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code && code.data && code.data.trim()) {
+          handleExecuteScan(code.data);
+        }
+      } catch (err) {
+        // Ignore frame capture exceptions while stream is settling
+      }
+    };
+
+    intervalId = setInterval(scanFrame, 250);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isOpen, activeTab, hasCameraAccess]);
+
   const triggerAudioBeep = (success: boolean) => {
     if ("speechSynthesis" in window) {
       const text = success ? "Check-in Verified" : "Scan Error";
@@ -78,7 +122,20 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   };
 
   const handleExecuteScan = (rawQRString: string) => {
-    let inputToProcess = rawQRString.trim();
+    const trimmed = rawQRString.trim();
+    if (!trimmed) return;
+
+    const now = Date.now();
+    if (
+      lastScannedRef.current &&
+      lastScannedRef.current.code === trimmed &&
+      now - lastScannedRef.current.time < 3500
+    ) {
+      return; // Ignore duplicate detections of same token within 3.5s
+    }
+    lastScannedRef.current = { code: trimmed, time: now };
+
+    let inputToProcess = trimmed;
     if (inputToProcess && !inputToProcess.startsWith("{")) {
       // Manual token lookup fallback for patients with broken screens/paper slips
       const matched = db.activeVisits.find((v) => v.tokenNumber.toUpperCase() === inputToProcess.toUpperCase());
@@ -137,7 +194,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             }`}
           >
             <Camera className="h-4 w-4" />
-            <span>Webcam Live Feed</span>
+            <span>Webcam Optical Scanner</span>
           </button>
 
           <button
@@ -172,18 +229,24 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                     muted
                     className="w-full h-full object-cover"
                   />
-                  {/* Targeting Reticle Frame */}
+                  {/* Targeting Reticle Frame with Active Laser Sweep */}
                   <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-                    <div className="w-48 h-48 border-2 border-teal-400 rounded-2xl relative animate-pulse shadow-[0_0_20px_rgba(45,212,191,0.4)]">
+                    <div className="w-52 h-52 border-2 border-teal-400/80 rounded-2xl relative shadow-[0_0_20px_rgba(45,212,191,0.3)] overflow-hidden">
                       <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-teal-400 rounded-tl" />
                       <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-teal-400 rounded-tr" />
                       <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-teal-400 rounded-bl" />
                       <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-teal-400 rounded-br" />
+                      
+                      {/* Active Laser Scan Line */}
+                      <div className="w-full h-1 bg-gradient-to-r from-transparent via-teal-300 to-transparent shadow-[0_0_12px_rgba(45,212,191,1)] animate-bounce mt-24" />
                     </div>
                   </div>
-                  <span className="absolute bottom-2 text-[10px] bg-slate-900/80 text-teal-300 px-3 py-1 rounded-full font-mono">
-                    ALIGN PATIENT QR CODE IN FRAME
-                  </span>
+                  <div className="absolute bottom-2 flex items-center gap-2">
+                    <span className="text-[10px] bg-slate-900/90 text-teal-300 px-3 py-1 rounded-full font-mono flex items-center gap-1.5 border border-teal-500/30">
+                      <span className="skeuo-led skeuo-led-green animate-pulse" />
+                      <span>OPTICAL DETECTOR ACTIVE &middot; ALIGN QR PASS</span>
+                    </span>
+                  </div>
                 </>
               )}
             </div>

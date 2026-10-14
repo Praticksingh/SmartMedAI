@@ -95,3 +95,21 @@ describe("Queue Engine (Priority, FIFO Sorting & SLA Aging)", () => {
     expect(getQueuePosition("C-999", queue)).toBe(-1);
   });
 });
+
+describe("Telehealth Video & AI Load Balancing Engine", () => {
+  it("should generate a functional Jitsi Meet WebRTC room URL without dummy domain", async () => {
+    const { generateVirtualRoomUrl } = await import("./telehealthEngine");
+    const session = generateVirtualRoomUrl("CARD-101", "CARD");
+    expect(session.roomUrl).toContain("meet.jit.si");
+    expect(session.roomUrl).toContain("SmartMedAI-CARD-CARD-101");
+    expect(session.departmentCode).toBe("CARD");
+  });
+
+  it("should safely handle queue diversion operations", async () => {
+    const { applyQueueDiversion } = await import("./aiForecastEngine");
+    const res = applyQueueDiversion("CARD", "GENMED", 2, "Test Admin");
+    expect(res).toHaveProperty("success");
+    expect(res).toHaveProperty("divertedTokens");
+    expect(res).toHaveProperty("message");
+  });
+});

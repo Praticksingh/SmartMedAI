@@ -1,4 +1,5 @@
 // Shared Mock Database State Synchronizer using localStorage
+import { syncVisitToBackend, syncQueueStatusToBackend } from "../services/backendBridge";
 
 export interface DepartmentData {
   id: number;
@@ -80,6 +81,15 @@ interface MockDB {
 
 // Read database from localStorage
 export const readDB = (): MockDB => {
+  if (typeof window === "undefined" || typeof localStorage === "undefined" || !localStorage.getItem) {
+    return { 
+      schemaVersion: CURRENT_STATE_SCHEMA,
+      departments: INITIAL_DEPARTMENTS, 
+      auditLogs: INITIAL_LOGS, 
+      activeVisits: INITIAL_VISITS,
+      staffMembers: INITIAL_STAFF 
+    };
+  }
   const data = localStorage.getItem(STORAGE_KEY);
   if (!data) {
     const defaultDB: MockDB = { 
@@ -89,7 +99,9 @@ export const readDB = (): MockDB => {
       activeVisits: INITIAL_VISITS,
       staffMembers: INITIAL_STAFF 
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDB));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDB));
+    } catch {}
     return defaultDB;
   }
   try {
@@ -104,7 +116,9 @@ export const readDB = (): MockDB => {
         activeVisits: [],
         staffMembers: []
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedDB));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedDB));
+      } catch {}
       return sanitizedDB;
     }
     if (!parsed.departments || parsed.departments.length === 0) parsed.departments = INITIAL_DEPARTMENTS;
@@ -125,9 +139,16 @@ export const readDB = (): MockDB => {
 };
 
 // Write database to localStorage and trigger updates
-const writeDB = (db: MockDB) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-  window.dispatchEvent(new CustomEvent(CUSTOM_EVENT_TYPE));
+export const writeDB = (db: MockDB) => {
+  if (typeof window === "undefined" || typeof localStorage === "undefined" || !localStorage.setItem) {
+    return;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    if (typeof window !== "undefined" && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent(CUSTOM_EVENT_TYPE));
+    }
+  } catch {}
 };
 
 // State listener hook hook setup
@@ -232,6 +253,7 @@ export const callNextPatient = (code: string, actor: string) => {
 
     logEvent(actor, "QUEUE_CALL", `Called token ${calledToken} to treatment room in ${code}.`);
     writeDB(db);
+    syncQueueStatusToBackend(calledToken, "CALLED").catch(() => {});
     return calledToken;
   }
   return null;
@@ -266,6 +288,7 @@ export const completeCurrentPatient = (code: string, actor: string) => {
 
     logEvent(actor, "VISIT_COMPLETED", `Concluded consultation for token ${completedToken} in ${code}.`);
     writeDB(db);
+    syncQueueStatusToBackend(completedToken, "COMPLETED").catch(() => {});
     return completedToken;
   }
   return null;
@@ -300,6 +323,7 @@ export const markPatientNoShow = (code: string, actor: string) => {
 
     logEvent(actor, "QUEUE_NOSHOW", `Marked called token ${noShowToken} as No-Show in ${code}.`);
     writeDB(db);
+    syncQueueStatusToBackend(noShowToken, "COMPLETED").catch(() => {});
     return noShowToken;
   }
   return null;
@@ -374,6 +398,7 @@ export const addPatientVisit = (
   db.activeVisits.push(newVisit);
   logEvent(patientName, "TRIAGE_CREATED", `Symptom assessment processed. Generated token ${tokenNumber} for ${dept.name} (${priorityTexts[priority]}).`);
   writeDB(db);
+  syncVisitToBackend(newVisit).catch(() => {});
 
   return newVisit;
 };

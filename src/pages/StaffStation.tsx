@@ -21,6 +21,9 @@ import { Badge } from "../components/ui/badge";
 import { Dialog } from "../components/ui/dialog";
 import { TriageRuleCard } from "../components/ui/TriageRuleCard";
 import { QRScannerModal } from "../components/ui/QRScannerModal";
+import { ConsultationOrderModal } from "../components/ui/ConsultationOrderModal";
+import { TelehealthModal } from "../components/ui/TelehealthModal";
+import { createPharmacyOrder, createLabOrder } from "../utils/pharmacyLabEngine";
 import { useMockDB } from "../hooks/useMockDB";
 import { 
   setDepartmentStatus, 
@@ -49,6 +52,14 @@ export const StaffStation: React.FC = () => {
 
   // QR Intake Scanner Modal State
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+
+  // Consultation Discharge & Orders Modal State
+  const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
+  const [orderFeedback, setOrderFeedback] = useState<string | null>(null);
+
+  // Telehealth Video Call In-App Modal State
+  const [isTelehealthModalOpen, setIsTelehealthModalOpen] = useState(false);
+  const [telehealthRoomUrl, setTelehealthRoomUrl] = useState("");
 
   const db = useMockDB();
   const { profile, user } = useAuth();
@@ -164,6 +175,45 @@ export const StaffStation: React.FC = () => {
     );
   };
 
+  const handleLaunchTelehealth = () => {
+    if (!currentPatient) return;
+    const room = generateVirtualRoomUrl(currentPatient.token, dept.code);
+    setTelehealthRoomUrl(room.roomUrl);
+    setIsTelehealthModalOpen(true);
+  };
+
+  const handleConsultationDischarge = (orders: {
+    issueRx: boolean;
+    medicines: string[];
+    orderLab: boolean;
+    tests: string[];
+    notes: string;
+  }) => {
+    if (!currentPatient) return;
+
+    const feedbackParts: string[] = [];
+
+    if (orders.issueRx && orders.medicines.length > 0) {
+      const rx = createPharmacyOrder(currentPatient.token, orders.medicines, staffName);
+      feedbackParts.push(`Pharmacy Token ${rx.tokenNumber}`);
+    }
+
+    if (orders.orderLab && orders.tests.length > 0) {
+      const lab = createLabOrder(currentPatient.token, orders.tests, staffName);
+      feedbackParts.push(`Lab Token ${lab.tokenNumber}`);
+    }
+
+    completeCurrentPatient(dept.code, staffName);
+    setIsConsultationModalOpen(false);
+
+    if (feedbackParts.length > 0) {
+      setOrderFeedback(`Discharged ${currentPatient.token}. Generated ${feedbackParts.join(" & ")}.`);
+    } else {
+      setOrderFeedback(`Discharged ${currentPatient.token} successfully.`);
+    }
+    setTimeout(() => setOrderFeedback(null), 6000);
+  };
+
   const stats = [
     { label: "Waiting in Queue", value: `${dept.waiting} Patients`, color: "text-amber-600" },
     { label: "Currently Treating", value: `${dept.treating} Patient`, color: "text-teal-600" },
@@ -194,15 +244,19 @@ export const StaffStation: React.FC = () => {
         );
       })()}
 
-      {/* Staff and Department Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-lg border border-slate-200/80 shadow-premium">
+      {/* Staff and Department Header - Skeuomorphic Raised Plate */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 skeuo-card p-6 relative">
+        <span className="skeuo-rivet absolute top-3 left-3" />
+        <span className="skeuo-rivet absolute top-3 right-3" />
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">Clinical Station</span>
-            <Badge variant="secondary">Emergency Command Ready</Badge>
+            <span className="text-sm font-bold text-sky-800 uppercase tracking-wider font-mono skeuo-engraved-text">Clinical Station</span>
+            <span className="px-2.5 py-0.5 rounded-lg bg-sky-100 border border-sky-300 text-sky-800 font-mono text-xs font-bold shadow-xs">
+              Emergency Command Ready
+            </span>
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight skeuo-embossed-text">
               {dept.name} &mdash; {dept.room}
             </h1>
             
@@ -210,16 +264,16 @@ export const StaffStation: React.FC = () => {
             <select
               value={selectedDeptCode}
               onChange={(e) => setSelectedDeptCode(e.target.value)}
-              className="text-xs border border-slate-300 bg-slate-50 hover:bg-slate-100 rounded px-2 py-1 text-slate-600 font-semibold focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+              className="skeuo-input text-xs px-2.5 py-1.5 font-bold cursor-pointer"
             >
               {db.departments.map(d => (
                 <option key={d.code} value={d.code}>{d.code} Clinic</option>
               ))}
             </select>
           </div>
-          <p className="text-xs text-slate-500">
-            Logged In: {staffName} | Dept Status: 
-            <span className={`font-semibold ml-1.5 ${isQueuePaused ? "text-rose-600" : isBreakActive ? "text-amber-600" : "text-emerald-600"}`}>
+          <p className="text-xs text-slate-600 font-medium">
+            Logged In: <strong className="text-slate-800">{staffName}</strong> | Dept Status: 
+            <span className={`font-bold ml-1.5 ${isQueuePaused ? "text-rose-600" : isBreakActive ? "text-amber-600" : "text-emerald-600"}`}>
               {isQueuePaused ? "PAUSED" : isBreakActive ? "ON LUNCH/BREAK" : "ACTIVE"}
             </span>
           </p>
@@ -228,7 +282,7 @@ export const StaffStation: React.FC = () => {
         {/* Action Controls for Department Status */}
         <div className="flex flex-wrap gap-2.5">
           <Button 
-            variant="outline" 
+            variant="secondary" 
             size="sm" 
             onClick={handlePauseToggle}
           >
@@ -237,11 +291,11 @@ export const StaffStation: React.FC = () => {
           </Button>
 
           <Button 
-            variant="outline" 
+            variant="secondary" 
             size="sm" 
             onClick={handleBreakToggle}
           >
-            <Coffee className="h-4 w-4 mr-1.5 text-indigo-500" />
+            <Coffee className="h-4 w-4 mr-1.5 text-sky-600" />
             <span>{isBreakActive ? "End Break" : "Set Break"}</span>
           </Button>
         </div>
@@ -249,11 +303,11 @@ export const StaffStation: React.FC = () => {
 
       {/* Warning Alert if Paused */}
       {isQueuePaused && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-lg flex items-start gap-3 shadow-sm">
+        <div className="skeuo-card-rose px-4 py-3 rounded-xl flex items-start gap-3 shadow-md">
           <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-semibold text-sm">OPD Queue Paused</h4>
-            <p className="text-xs text-rose-700 mt-0.5">
+            <h4 className="font-bold text-sm text-rose-950 uppercase">OPD Queue Paused</h4>
+            <p className="text-xs text-rose-900 mt-0.5 font-medium">
               No patients will be routed or called to treatment until the station resumes active status.
             </p>
           </div>
@@ -263,15 +317,16 @@ export const StaffStation: React.FC = () => {
       {/* Triage Guideline sheet for quick verification */}
       <TriageRuleCard />
 
-      {/* Stats Dashboard */}
+      {/* Stats Dashboard - Skeuomorphic Raised Plates */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <Card key={i}>
+          <div key={i} className="skeuo-card p-5 relative overflow-hidden">
+            <span className="skeuo-rivet absolute top-2.5 right-2.5" />
             <div className="text-center space-y-1">
-              <span className="text-xs font-medium text-slate-500 block">{stat.label}</span>
-              <span className={`text-2xl font-bold tracking-tight ${stat.color} block`}>{stat.value}</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block font-mono skeuo-engraved-text">{stat.label}</span>
+              <span className={`text-2xl font-black tracking-tight ${stat.color} block font-mono skeuo-embossed-text`}>{stat.value}</span>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
@@ -282,50 +337,48 @@ export const StaffStation: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Currently Serving Panel */}
-          <Card className="border-teal-200 bg-teal-50/5">
+          <Card hoverLift rivets className="border border-white/95">
             <CardHeader>
-              <CardTitle className="text-slate-800 text-lg flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-teal-600" />
+              <CardTitle className="text-slate-900 text-lg flex items-center gap-2 skeuo-embossed-text">
+                <span className="skeuo-led skeuo-led-green animate-pulse" />
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
                 <span>Currently Serving Patient</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {currentPatient ? (
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border border-slate-200 rounded-lg gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 skeuo-inset rounded-xl gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xl font-bold text-slate-800 tracking-tight">{currentPatient.token}</span>
+                      <span className="text-2xl font-black text-slate-900 font-mono tracking-tight skeuo-embossed-text">{currentPatient.token}</span>
                       <Badge variant={currentPatient.priority}>{currentPatient.priorityText}</Badge>
                     </div>
-                    <span className="block text-sm font-semibold text-slate-700">{currentPatient.name}</span>
+                    <span className="block text-sm font-bold text-slate-800">{currentPatient.name}</span>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chief Complaint:</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-mono">Chief Complaint:</span>
                       {currentPatient.symptom.split(", ").map((s: string, i: number) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold">
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-lg bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold shadow-xs">
                           {s}
                         </span>
                       ))}
                     </div>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1 font-mono">
                       <Clock className="h-3.5 w-3.5" /> Treatment duration: {currentPatient.duration}
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto flex-wrap">
                     <Button 
-                      variant="outline" 
-                      className="sm:w-auto text-xs border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
-                      onClick={() => {
-                        const room = generateVirtualRoomUrl(currentPatient.token, dept.code);
-                        window.open(room.roomUrl, "_blank");
-                      }}
+                      variant="secondary" 
+                      className="sm:w-auto text-xs"
+                      onClick={handleLaunchTelehealth}
                     >
-                      <Video className="h-3.5 w-3.5 mr-1 text-indigo-600" />
+                      <Video className="h-3.5 w-3.5 mr-1 text-sky-600" />
                       <span>Tele-Health Video</span>
                     </Button>
 
                     <Button 
-                      variant="outline" 
-                      className="sm:w-auto text-xs"
+                      variant="secondary" 
+                      className="sm:w-auto text-xs text-rose-700 hover:text-rose-900"
                       onClick={() => triggerConfirmation(
                         "Mark patient as No-Show?",
                         `Marking ${currentPatient.token} as No-Show will release this consultation room.`,
@@ -335,20 +388,26 @@ export const StaffStation: React.FC = () => {
                       Mark No-Show
                     </Button>
                     <Button 
-                      className="sm:w-auto text-xs bg-teal-700 text-white"
-                      onClick={() => triggerConfirmation(
-                        "Complete Consultation?",
-                        `Confirm completion of medical check for token ${currentPatient.token}.`,
-                        () => completeCurrentPatient(dept.code, staffName)
-                      )}
+                      variant="teal"
+                      className="sm:w-auto text-xs font-bold"
+                      onClick={() => setIsConsultationModalOpen(true)}
                     >
-                      Complete Visit
+                      <CheckCircle className="h-3.5 w-3.5 mr-1 text-emerald-300" />
+                      <span>Complete Visit &amp; Issue Rx</span>
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="p-6 bg-white border border-slate-200 border-dashed rounded-lg text-center text-sm text-slate-400">
+                <div className="p-8 skeuo-inset rounded-xl text-center text-sm text-slate-500 font-medium">
                   No patient currently in treatment room. Click "Call Next Patient" to advance the queue.
+                </div>
+              )}
+
+              {/* Order Creation Feedback Toast/Banner */}
+              {orderFeedback && (
+                <div className="mt-3 p-3 rounded-xl bg-teal-50 border border-teal-300 text-teal-900 text-xs font-bold font-mono flex items-center gap-2 animate-in fade-in shadow-xs">
+                  <CheckCircle className="h-4 w-4 text-teal-600 shrink-0" />
+                  <span>{orderFeedback}</span>
                 </div>
               )}
             </CardContent>
@@ -357,23 +416,21 @@ export const StaffStation: React.FC = () => {
           {/* Waiting List */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                <Users className="h-5 w-5 text-slate-400" />
+              <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 skeuo-embossed-text">
+                <Users className="h-5 w-5 text-sky-600" />
                 <span>Waiting Room Queue ({queueList.length})</span>
               </h2>
               
               <div className="flex items-center gap-2">
-                {/* Priority filter buttons */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400 ml-1" />
+                {/* Priority filter buttons - Skeuomorphic Tab Track */}
+                <div className="skeuo-tab-track text-xs">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500 ml-1.5 my-auto" />
                   {(["ALL", "p1", "p2", "p3", "p4"] as const).map((p) => (
                     <button
                       key={p}
                       onClick={() => setPriorityFilter(p)}
-                      className={`px-2 py-1 rounded transition-colors ${
-                        priorityFilter === p 
-                          ? "bg-white text-slate-800 shadow-xs font-bold" 
-                          : "text-slate-500 hover:text-slate-700"
+                      className={`skeuo-tab-btn text-xs py-1 px-2.5 ${
+                        priorityFilter === p ? "skeuo-tab-btn-active" : ""
                       }`}
                     >
                       {p === "ALL" ? "All" : p.toUpperCase()}
@@ -382,6 +439,7 @@ export const StaffStation: React.FC = () => {
                 </div>
 
                 <Button 
+                  variant="primary"
                   size="sm" 
                   disabled={dept.nextTokens.length === 0 || !!dept.nowServing || isQueuePaused || isBreakActive}
                   onClick={() => triggerConfirmation(
@@ -395,6 +453,7 @@ export const StaffStation: React.FC = () => {
                       }
                     }
                   )}
+                  className="py-2"
                 >
                   <UserPlus className="h-4 w-4 mr-1.5" />
                   <span>Call Next Patient</span>
@@ -604,6 +663,26 @@ export const StaffStation: React.FC = () => {
         isOpen={isQRScannerOpen}
         onClose={() => setIsQRScannerOpen(false)}
         staffName={staffName}
+      />
+
+      {/* Consultation Completion & E-Prescription / Diagnostics Order Modal */}
+      <ConsultationOrderModal
+        isOpen={isConsultationModalOpen}
+        onClose={() => setIsConsultationModalOpen(false)}
+        currentPatient={currentPatient}
+        departmentName={dept.name}
+        staffName={staffName}
+        onComplete={handleConsultationDischarge}
+      />
+
+      {/* In-App Live Telehealth Video Conference Modal */}
+      <TelehealthModal
+        isOpen={isTelehealthModalOpen}
+        onClose={() => setIsTelehealthModalOpen(false)}
+        tokenNumber={currentPatient?.token || ""}
+        departmentCode={dept.code}
+        roomUrl={telehealthRoomUrl}
+        patientName={currentPatient?.name}
       />
 
     </div>

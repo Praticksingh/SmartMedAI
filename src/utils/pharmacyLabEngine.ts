@@ -6,6 +6,7 @@
  */
 
 import { logEvent } from "./mockState";
+import { syncPharmacyOrderToBackend, syncLabOrderToBackend } from "../services/backendBridge";
 
 export interface PharmacyOrder {
   id: string;
@@ -62,6 +63,8 @@ export const createPharmacyOrder = (
     `Generated Pharmacy token ${tokenNumber} for visit ${visitId}. Directing to Dispensary Counter 3.`
   );
 
+  syncPharmacyOrderToBackend(tokenNumber, medicines, actorName).catch(() => {});
+
   return newOrder;
 };
 
@@ -98,6 +101,8 @@ export const createLabOrder = (
     "LAB_ORDER_CREATED",
     `Generated Laboratory token ${tokenNumber} for visit ${visitId}. Directing to Central Pathology.`
   );
+
+  syncLabOrderToBackend(tokenNumber, tests, actorName).catch(() => {});
 
   return newOrder;
 };

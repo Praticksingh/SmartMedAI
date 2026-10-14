@@ -19,6 +19,7 @@ import {
   type SignUpPayload,
 } from "../utils/mockAuth";
 import { apiClient, setStoredToken } from "../api/client";
+import { syncBackendSession } from "../services/backendBridge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AuthContextValue {
@@ -80,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (fbResult.user && fbResult.role) {
         setUser(fbResult.user);
         setProfile(fbResult.profile || null);
+        syncBackendSession(email, password, fbResult.role).catch(() => {});
         return { role: fbResult.role };
       }
 
@@ -88,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!("error" in localResult)) {
         setUser(localResult.user);
         setProfile(localResult.profile);
+        syncBackendSession(email, password, localResult.user.role).catch(() => {});
         return { role: localResult.user.role };
       }
 
@@ -104,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (fbResult.user && fbResult.role) {
         setUser(fbResult.user);
         setProfile(fbResult.profile || null);
+        syncBackendSession(fbResult.user.email || "google@hospital.gov.in", "GoogleAuthDemo123!", fbResult.role).catch(() => {});
         return { role: fbResult.role };
       }
 
@@ -132,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!("error" in localResult)) {
         setUser(localResult.user);
         setProfile(localResult.profile);
+        syncBackendSession(demoEmail, "GoogleAuthDemo123!", preferredRole).catch(() => {});
         return { role: localResult.user.role };
       }
 

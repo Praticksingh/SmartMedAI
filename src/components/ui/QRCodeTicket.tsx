@@ -37,10 +37,18 @@ export const QRCodeTicket: React.FC<QRCodeTicketProps> = ({ visit, departmentNam
   };
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4 shadow-sm text-center">
-      
+    <div className="skeuo-ticket p-5 space-y-4 text-center relative overflow-hidden">
+      {/* Physical Ticket Notches */}
+      <div className="skeuo-ticket-notch-left" />
+      <div className="skeuo-ticket-notch-right" />
+
+      {/* Realistic Metallic Lanyard Clip / Slot */}
+      <div className="flex flex-col items-center -mt-2 mb-2">
+        <div className="w-12 h-2.5 bg-gradient-to-b from-slate-400 via-slate-100 to-slate-500 rounded-full border border-slate-400 shadow-[inset_0_1px_1px_rgba(0,0,0,0.4),0_1px_2px_rgba(0,0,0,0.1)]" />
+      </div>
+
       {/* Interactive QR Code Container */}
-      <div className="relative group inline-block bg-white p-4 rounded-xl border border-slate-200 shadow-md">
+      <div className="relative group inline-block bg-white p-4 rounded-xl border border-slate-200 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),0_4px_12px_rgba(15,23,42,0.05)]">
         <div className="h-32 w-32 bg-white flex flex-col items-center justify-center relative">
           <QrCode className="h-28 w-28 text-slate-900 transition-transform duration-200 group-hover:scale-105" />
         </div>
@@ -48,7 +56,7 @@ export const QRCodeTicket: React.FC<QRCodeTicketProps> = ({ visit, departmentNam
         {/* Hover overlay button to expand */}
         <button
           onClick={() => setIsFullscreenOpen(true)}
-          className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl flex flex-col items-center justify-center text-white text-xs font-bold gap-1 cursor-pointer"
+          className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl flex flex-col items-center justify-center text-white text-xs font-bold gap-1 cursor-pointer"
         >
           <Maximize2 className="h-5 w-5" />
           <span>Expand QR Pass</span>
@@ -57,40 +65,40 @@ export const QRCodeTicket: React.FC<QRCodeTicketProps> = ({ visit, departmentNam
 
       {/* QR Reference & Verification Badge */}
       <div className="space-y-1">
-        <div className="flex items-center justify-center gap-1 text-[10px] font-mono text-slate-500 uppercase tracking-wider">
-          <ShieldCheck className="h-3.5 w-3.5 text-teal-600" />
+        <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono font-bold text-slate-700 uppercase tracking-wider skeuo-engraved-text">
+          <ShieldCheck className="h-4 w-4 text-teal-600" />
           <span>REF: {visit.qrCodeReference}</span>
         </div>
-        <span className="text-[10px] text-slate-400 block">Signed Cryptographic OPD Token</span>
+        <span className="text-[10px] text-slate-500 font-semibold block">Signed Cryptographic OPD Hardware Token</span>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-2 pt-1 border-t border-slate-200/60">
+      <div className="flex justify-center gap-2 pt-3 border-t border-dashed border-slate-300">
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => setIsFullscreenOpen(true)}
           className="text-xs"
         >
-          <Maximize2 className="h-3.5 w-3.5 mr-1 text-slate-500" />
+          <Maximize2 className="h-3.5 w-3.5 mr-1 text-slate-600" />
           <span>Fullscreen</span>
         </Button>
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={handleSavePass}
           className="text-xs"
         >
-          <Download className="h-3.5 w-3.5 mr-1 text-slate-500" />
+          <Download className="h-3.5 w-3.5 mr-1 text-slate-600" />
           <span>Save Pass</span>
         </Button>
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={handlePrint}
           className="text-xs"
         >
-          <Printer className="h-3.5 w-3.5 mr-1 text-slate-500" />
+          <Printer className="h-3.5 w-3.5 mr-1 text-slate-600" />
           <span>Print</span>
         </Button>
       </div>

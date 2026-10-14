@@ -26,7 +26,7 @@ import { useMockDB } from "../hooks/useMockDB";
 import { setDepartmentStatus, addDepartment, resetDB } from "../utils/mockState";
 import { calculateDepartmentCongestion, calculateHospitalOverview } from "../utils/congestionEngine";
 import { filterAuditLogs, exportAuditLogsCSV, exportAuditLogsJSON, getEventCategory } from "../utils/auditEngine";
-import { calculateHospitalLoadBalancing } from "../utils/aiForecastEngine";
+import { calculateHospitalLoadBalancing, applyQueueDiversion } from "../utils/aiForecastEngine";
 import { readEmergencyState, toggleDisasterSurgeMode, triggerCodeBlueAlert } from "../utils/emergencyEngine";
 import { useAuth } from "../context/AuthContext";
 
@@ -44,6 +44,15 @@ export const HospitalAdminCenter: React.FC = () => {
   // Audit Query & Export State
   const [auditSearchKeyword, setAuditSearchKeyword] = useState("");
   const [auditCategoryFilter, setAuditCategoryFilter] = useState("ALL");
+  const [diversionFeedback, setDiversionFeedback] = useState<string | null>(null);
+
+  // Emergency Modal States (Replaces browser prompt)
+  const [isSurgeModalOpen, setIsSurgeModalOpen] = useState(false);
+  const [surgeReasonInput, setSurgeReasonInput] = useState("Mass Casualty Incident / Local Epidemic Spike");
+
+  const [isCodeBlueModalOpen, setIsCodeBlueModalOpen] = useState(false);
+  const [codeBlueDeptCode, setCodeBlueDeptCode] = useState("CARD");
+  const [codeBlueRoomInput, setCodeBlueRoomInput] = useState("Room 204");
 
   const db = useMockDB();
   const { profile, user } = useAuth();
@@ -92,32 +101,36 @@ export const HospitalAdminCenter: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-lg border border-slate-200/80 shadow-premium">
+      {/* Header - Skeuomorphic Raised Plate */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 skeuo-card p-6 relative">
+        <span className="skeuo-rivet absolute top-3 left-3" />
+        <span className="skeuo-rivet absolute top-3 right-3" />
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Hospital Administration</span>
-            <Badge variant="neutral">Disaster Surge & Code Blue Ready</Badge>
+            <span className="text-sm font-bold text-sky-800 uppercase tracking-wider font-mono skeuo-engraved-text">Hospital Administration</span>
+            <span className="px-2.5 py-0.5 rounded-lg bg-sky-100 border border-sky-300 text-sky-800 font-mono text-xs font-bold shadow-xs">
+              Disaster Surge & Code Blue Ready
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800 mt-1">
+          <h1 className="text-2xl font-black text-slate-900 mt-1 skeuo-embossed-text">
             OPD Operations Command Center
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Admin Profile: {adminName} | Hospital-wide emergency escalation & Code Blue rapid dispatch.
+          <p className="text-xs text-slate-600 mt-0.5 font-medium">
+            Admin Profile: <strong className="text-slate-800">{adminName}</strong> | Hospital-wide emergency escalation & Code Blue rapid dispatch.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
-            variant="outline"
+            variant="secondary"
             size="sm" 
-            className="border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 font-bold"
+            className="text-rose-700 hover:text-rose-900 font-bold"
             onClick={() => {
               const state = readEmergencyState();
               if (state.isDisasterSurgeActive) {
                 toggleDisasterSurgeMode(false, "", adminName);
               } else {
-                const reason = prompt("Enter Hospital Disaster Surge Reason:", "Mass Casualty Incident / Local Epidemic Spike");
-                if (reason) toggleDisasterSurgeMode(true, reason, adminName);
+                setSurgeReasonInput("Mass Casualty Incident / Local Epidemic Spike");
+                setIsSurgeModalOpen(true);
               }
             }}
           >
@@ -126,20 +139,19 @@ export const HospitalAdminCenter: React.FC = () => {
           </Button>
 
           <Button 
+            variant="danger"
             size="sm" 
-            className="bg-rose-700 hover:bg-rose-800 text-white font-bold"
             onClick={() => {
-              const dept = prompt("Enter Code Blue Clinic Code:", "CARD");
-              if (dept) {
-                triggerCodeBlueAlert(dept.toUpperCase(), "Room 204", adminName);
-              }
+              setCodeBlueDeptCode(db.departments[0]?.code || "CARD");
+              setCodeBlueRoomInput(db.departments[0]?.room || "Room 204");
+              setIsCodeBlueModalOpen(true);
             }}
           >
-            <Zap className="h-4 w-4 mr-1 text-amber-300" />
+            <Zap className="h-4 w-4 mr-1 text-amber-200" />
             <span>Code Blue Alert</span>
           </Button>
 
-          <Button variant="outline" size="sm" onClick={resetDB}>
+          <Button variant="secondary" size="sm" onClick={resetDB}>
             Reset DB
           </Button>
         </div>
@@ -147,22 +159,24 @@ export const HospitalAdminCenter: React.FC = () => {
 
       {/* Active Disaster Surge Alert Bar */}
       {readEmergencyState().isDisasterSurgeActive && (
-        <div className="bg-gradient-to-r from-rose-600 to-red-600 text-white p-4 rounded-2xl shadow-md flex items-center justify-between animate-pulse">
+        <div className="skeuo-card-rose p-4 flex items-center justify-between shadow-lg animate-pulse">
           <div className="flex items-center gap-3">
-            <ShieldAlert className="h-6 w-6 text-white shrink-0" />
+            <span className="skeuo-led skeuo-led-red" />
+            <ShieldAlert className="h-6 w-6 text-rose-600 shrink-0" />
             <div>
-              <span className="font-extrabold text-sm text-white block uppercase tracking-wider">
+              <span className="font-black text-sm text-rose-950 block uppercase tracking-wider">
                 🚨 HOSPITAL DISASTER SURGE MODE IS ACTIVE!
               </span>
-              <span className="text-xs text-rose-100 font-medium">
+              <span className="text-xs text-rose-900 font-medium">
                 Reason: {readEmergencyState().surgeReason || "Emergency Surge Activated"} &mdash; All triage intake auto-escalated to P1 Critical priority.
               </span>
             </div>
           </div>
           <Button 
+            variant="secondary"
             size="sm" 
             onClick={() => toggleDisasterSurgeMode(false, "", adminName)}
-            className="bg-white text-rose-700 font-bold hover:bg-rose-50 text-xs shadow-xs"
+            className="text-xs font-bold text-rose-700"
           >
             Deactivate Surge
           </Button>
@@ -174,45 +188,68 @@ export const HospitalAdminCenter: React.FC = () => {
         const recommendations = calculateHospitalLoadBalancing(db.departments);
         if (recommendations.length === 0) return null;
         return (
-          <div className="bg-gradient-to-r from-sky-600 via-indigo-600 to-blue-700 text-white p-5 rounded-2xl shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm text-white">
-                <Sparkles className="h-5 w-5 text-amber-300 shrink-0" />
+          <div className="skeuo-screen p-5 space-y-3">
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-2 font-mono font-bold text-sm text-sky-400">
+                <span className="skeuo-led skeuo-led-cyan animate-pulse" />
+                <Sparkles className="h-5 w-5 text-sky-300 shrink-0" />
                 <span>AI Predictive Queue Load Balancing Recommendation</span>
               </div>
-              <Badge variant="success" className="bg-emerald-400 text-slate-900 font-extrabold text-[10px]">
+              <span className="bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-0.5 rounded-lg text-emerald-300 font-mono font-bold text-[10px]">
                 AI ACTIVE
-              </Badge>
+              </span>
             </div>
             {recommendations.map((rec, i) => (
-              <div key={i} className="bg-white/15 backdrop-blur-md border border-white/20 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div key={i} className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs relative z-10 font-mono">
                 <div className="space-y-0.5">
-                  <span className="font-bold text-amber-200 block">{rec.recommendationText}</span>
-                  <span className="text-slate-100 block">{rec.impactDescription}</span>
+                  <span className="font-bold text-cyan-300 block">{rec.recommendationText}</span>
+                  <span className="text-slate-300 block">{rec.impactDescription}</span>
                 </div>
                 <Button
+                  variant="primary"
                   size="sm"
-                  onClick={() => alert(`Applied AI Load Balancing Diversion: Redirected ${rec.suggestedDiversionCount} P4 tokens from ${rec.sourceDeptName} to ${rec.targetDeptName}.`)}
-                  className="bg-white hover:bg-sky-50 text-sky-800 font-bold text-xs whitespace-nowrap shadow-xs"
+                  onClick={() => {
+                    const res = applyQueueDiversion(
+                      rec.sourceDeptCode,
+                      rec.targetDeptCode,
+                      rec.suggestedDiversionCount,
+                      adminName
+                    );
+                    if (res.success) {
+                      setDiversionFeedback(res.message);
+                      setTimeout(() => setDiversionFeedback(null), 6000);
+                    } else {
+                      alert(res.message);
+                    }
+                  }}
+                  className="whitespace-nowrap text-xs py-1.5"
                 >
                   Apply Diversion
                 </Button>
               </div>
             ))}
+
+            {diversionFeedback && (
+              <div className="bg-emerald-950/80 border border-emerald-500/60 rounded-xl p-3 text-xs text-emerald-300 font-mono flex items-center gap-2 animate-in fade-in relative z-10">
+                <span className="skeuo-led skeuo-led-green animate-pulse" />
+                <span>{diversionFeedback}</span>
+              </div>
+            )}
           </div>
         );
       })()}
 
-      {/* Hospital stats widgets */}
+      {/* Hospital stats widgets - Skeuomorphic Raised Plates */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {adminStats.map((stat, i) => (
-          <Card key={i}>
+          <div key={i} className="skeuo-card p-5 relative overflow-hidden">
+            <span className="skeuo-rivet absolute top-2.5 right-2.5" />
             <div className="space-y-1">
-              <span className="text-xs font-medium text-slate-500 block">{stat.label}</span>
-              <span className="text-2xl font-bold text-slate-800 tracking-tight block">{stat.value}</span>
-              <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">{stat.subtext}</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block font-mono skeuo-engraved-text">{stat.label}</span>
+              <span className="text-2xl font-black text-slate-900 font-mono tracking-tight block skeuo-embossed-text">{stat.value}</span>
+              <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider font-mono">{stat.subtext}</span>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
@@ -504,6 +541,104 @@ export const HospitalAdminCenter: React.FC = () => {
         departmentName={selectedStaffDeptName}
         adminName={adminName}
       />
+
+      {/* Hospital Disaster Surge Activation Modal */}
+      <Dialog
+        isOpen={isSurgeModalOpen}
+        onClose={() => setIsSurgeModalOpen(false)}
+        title="Activate Hospital Disaster Surge Mode"
+        description="Surge mode immediately flags the entire hospital system into mass casualty protocol. All incoming patient triage assessments will automatically escalate to P1 Critical priority."
+        confirmText="Activate Emergency Surge"
+        variant="danger"
+        onConfirm={() => {
+          toggleDisasterSurgeMode(true, surgeReasonInput.trim() || "Hospital Influx Emergency", adminName);
+          setIsSurgeModalOpen(false);
+        }}
+      >
+        <div className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">
+              Surge Reason / Incident Description:
+            </label>
+            <input
+              type="text"
+              value={surgeReasonInput}
+              onChange={(e) => setSurgeReasonInput(e.target.value)}
+              placeholder="e.g. Mass Casualty Influx / Viral Epidemic Spike"
+              className="text-sm border border-slate-300 rounded-lg w-full px-3 py-2 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">Quick Preset Incidents:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                "Mass Casualty Incident (MCI)",
+                "Local Viral Epidemic Spike",
+                "Multi-Vehicle Highway Collision",
+                "Regional Facility Outage Influx"
+              ].map((preset, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSurgeReasonInput(preset)}
+                  className="text-[10px] px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded font-semibold cursor-pointer transition-colors"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Code Blue Rapid Resuscitation Alert Modal */}
+      <Dialog
+        isOpen={isCodeBlueModalOpen}
+        onClose={() => setIsCodeBlueModalOpen(false)}
+        title="🚨 Initiate Hospital Code Blue Emergency"
+        description="Triggering Code Blue alerts resuscitation crash teams, clinical workstations, and digital displays hospital-wide for immediate life-support intervention."
+        confirmText="Broadcast Code Blue"
+        variant="danger"
+        onConfirm={() => {
+          triggerCodeBlueAlert(codeBlueDeptCode.toUpperCase(), codeBlueRoomInput.trim() || "Emergency Floor", adminName);
+          setIsCodeBlueModalOpen(false);
+        }}
+      >
+        <div className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">
+              Emergency Location / Department:
+            </label>
+            <select
+              value={codeBlueDeptCode}
+              onChange={(e) => {
+                const found = db.departments.find(d => d.code === e.target.value);
+                setCodeBlueDeptCode(e.target.value);
+                if (found) setCodeBlueRoomInput(found.room);
+              }}
+              className="text-sm border border-slate-300 rounded-lg w-full px-3 py-2 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
+            >
+              {db.departments.map(d => (
+                <option key={d.code} value={d.code}>{d.name} ({d.code}) &mdash; {d.room}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">
+              Room / Bed Identification:
+            </label>
+            <input
+              type="text"
+              value={codeBlueRoomInput}
+              onChange={(e) => setCodeBlueRoomInput(e.target.value)}
+              placeholder="e.g. Room 204 Bed 2"
+              className="text-sm border border-slate-300 rounded-lg w-full px-3 py-2 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+          </div>
+        </div>
+      </Dialog>
 
     </div>
   );

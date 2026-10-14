@@ -137,11 +137,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     <div className="flex flex-col min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-sky-500/20 selection:text-sky-900">
       
       {/* SmartMed Contextual Medical Telemetry Bar */}
-      <div className="bg-slate-900 border-b border-slate-800 text-xs py-2 px-4 hidden md:flex items-center justify-between text-slate-300 font-mono shadow-sm">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-1.5 text-sky-400">
+      {/* Top Skeuomorphic Medical Hardware Telemetry Ribbon */}
+      <div className="skeuo-screen rounded-none border-t-0 border-x-0 border-b-2 border-slate-800 text-xs py-2 px-4 hidden md:flex items-center justify-between font-mono shadow-[0_4px_10px_rgba(0,0,0,0.25)]">
+        <div className="flex items-center gap-6 relative z-10">
+          <div className="flex items-center gap-2 text-sky-400">
+            <span className="skeuo-led skeuo-led-cyan animate-pulse" />
             <Activity className="h-3.5 w-3.5 animate-pulse" />
-            <span className="font-bold tracking-wider text-[11px]">SMARTMED AI COMMAND TELEMETRY</span>
+            <span className="font-bold tracking-wider text-[11px] drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+              SMARTMED AI COMMAND TELEMETRY
+            </span>
           </div>
 
           {role === "PATIENT" && (
@@ -161,6 +165,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                     <span>{patientActiveVisit.priorityText}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-slate-300">
+                    <span className="skeuo-led skeuo-led-green" />
                     <span className="text-emerald-400 font-bold">STATUS:</span>
                     <span>{patientActiveVisit.status}</span>
                   </div>
@@ -235,35 +240,35 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-4 text-[11px]">
+        <div className="flex items-center gap-4 text-[11px] relative z-10">
           {activeCodeBlue ? (
-            <span className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-bold flex items-center gap-1 animate-pulse">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+            <span className="px-2.5 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/60 text-rose-300 font-bold flex items-center gap-1.5 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)]">
+              <span className="skeuo-led skeuo-led-red" />
               CODE BLUE: {activeCodeBlue.departmentCode}
             </span>
           ) : emergencyState.isDisasterSurgeActive ? (
-            <span className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-bold flex items-center gap-1 animate-pulse">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+            <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/60 text-amber-300 font-bold flex items-center gap-1.5 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+              <span className="skeuo-led skeuo-led-amber" />
               SURGE ACTIVE
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 font-bold flex items-center gap-1.5 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+              <span className="skeuo-led skeuo-led-green animate-pulse" />
               CLINICAL FLOW NORMAL
             </span>
           )}
-          <span className="text-slate-400">SMARTMED AI 2026.1 READY</span>
+          <span className="text-slate-400 font-mono">SMARTMED AI 2026.1 READY</span>
         </div>
       </div>
 
       {/* Emergency & Protocol Banner */}
       {activeCodeBlue ? (
-        <div className="bg-rose-600 text-white px-4 py-1.5 text-center text-xs font-semibold tracking-wide flex items-center justify-center gap-2 shadow-sm animate-pulse">
+        <div className="bg-rose-600 text-white px-4 py-2 text-center text-xs font-bold tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(225,29,72,0.4)] animate-pulse">
           <ShieldAlert className="h-4 w-4 text-white shrink-0" />
           <span>EMERGENCY: Code Blue Alert active in {activeCodeBlue.departmentCode} ({activeCodeBlue.room}) &mdash; Resuscitation Protocol Enforced</span>
         </div>
       ) : emergencyState.isDisasterSurgeActive ? (
-        <div className="bg-amber-600 text-white px-4 py-1.5 text-center text-xs font-semibold tracking-wide flex items-center justify-center gap-2 shadow-sm animate-pulse">
+        <div className="bg-amber-600 text-white px-4 py-2 text-center text-xs font-bold tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(217,119,6,0.4)] animate-pulse">
           <ShieldAlert className="h-4 w-4 text-white shrink-0" />
           <span>DISASTER SURGE ACTIVE: All intake triage prioritized to P1 Critical &mdash; {emergencyState.surgeReason}</span>
         </div>
@@ -277,28 +282,28 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         </div>
       )}
 
-      {/* SmartMed Main Navigation Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs">
+      {/* SmartMed Main Navigation Header - Skeuomorphic Console */}
+      <header className="sticky top-0 z-40 bg-[#ebf0f7]/95 backdrop-blur-md border-b border-slate-300 shadow-[0_6px_16px_#cad5e2,inset_0_1px_1px_#ffffff]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
 
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 active-shrink shrink-0 group">
-              <div className="h-10 w-10 bg-gradient-to-tr from-sky-600 via-blue-600 to-teal-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform duration-200">
+            {/* Logo Console Button */}
+            <Link to="/" className="flex items-center gap-3 active:translate-y-0.5 shrink-0 group">
+              <div className="h-11 w-11 skeuo-btn-primary rounded-xl flex items-center justify-center shadow-[4px_4px_10px_#cad5e2,-4px_-4px_10px_#ffffff]">
                 <Sparkles className="h-5 w-5 text-white animate-spin-slow" />
               </div>
               <div>
-                <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5">
-                  SmartMed<span className="text-gradient-cyan">AI</span> <span className="text-xs px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-mono font-bold">OPD</span>
+                <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5 skeuo-embossed-text">
+                  SmartMed<span className="text-gradient-cyan">AI</span> <span className="text-xs px-2.5 py-0.5 rounded-lg bg-sky-100 text-sky-800 border border-sky-300 font-mono font-bold shadow-[inset_1px_1px_2px_#ffffff,1px_1px_3px_#cad5e2]">OPD</span>
                 </span>
-                <span className="block text-[10px] text-sky-600 font-mono font-semibold tracking-widest uppercase -mt-1">
+                <span className="block text-[10px] text-sky-700 font-mono font-bold tracking-widest uppercase -mt-0.5 skeuo-engraved-text">
                   Hospital Outpatient Command
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex space-x-1.5 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200/80">
+            {/* Desktop Navigation - Skeuomorphic Tab Track */}
+            <nav className="hidden md:flex skeuo-tab-track">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -306,14 +311,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                      isActive
-                        ? "bg-white text-sky-600 shadow-sm border border-slate-200/80"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                    }`}
+                    className={`skeuo-tab-btn ${isActive ? "skeuo-tab-btn-active" : "hover:text-slate-900"}`}
                   >
                     <Icon className={`h-4 w-4 ${isActive ? "text-sky-600" : "text-slate-400"}`} />
-                    {item.label}
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
@@ -323,26 +324,26 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <div className="hidden lg:flex items-center gap-3">
               <LanguageSwitcher />
 
-              {/* System Health Pill */}
+              {/* System Health Tactile Pill */}
               <button
                 onClick={() => setIsHealthModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-mono font-bold hover:bg-emerald-100 transition-all shadow-xs cursor-pointer"
+                className="skeuo-btn skeuo-btn-secondary px-3 py-1.5 text-xs font-mono font-bold flex items-center gap-2 cursor-pointer"
                 title="View Diagnostic Metrics"
               >
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>AI CONNECTED</span>
+                <span className="skeuo-led skeuo-led-green animate-pulse" />
+                <span className="text-slate-700">DIAGNOSTICS</span>
               </button>
 
               {isAuthenticated && role ? (
                 <>
-                  <span className={`px-3 py-1 rounded-full border text-xs font-mono font-bold ${ROLE_COLOR[role]}`}>
+                  <span className="px-3 py-1 rounded-lg border text-xs font-mono font-bold bg-white text-slate-800 border-slate-300 shadow-[inset_0_1px_1px_#ffffff,2px_2px_5px_#cad4e2]">
                     {ROLE_LABEL[role]}
                   </span>
 
                   <div className="relative">
                     <button
                       onClick={() => setShowUserMenu(!showUserMenu)}
-                      className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-slate-200 bg-white hover:border-sky-300 transition-all duration-200 shadow-xs group"
+                      className="skeuo-btn skeuo-btn-secondary flex items-center gap-2 pl-1.5 pr-3 py-1.5 cursor-pointer"
                       aria-haspopup="true"
                     >
                       <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-sky-600 to-teal-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-xs">
@@ -351,31 +352,31 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                       <span className="text-sm font-semibold text-slate-800 max-w-[120px] truncate">
                         {profile?.fullName ?? user?.email?.split("@")[0]}
                       </span>
-                      <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${showUserMenu ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${showUserMenu ? "rotate-180" : ""}`} />
                     </button>
 
                     {showUserMenu && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-                        <div className="absolute right-0 top-full mt-2 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-700">
-                          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                            <p className="text-[10px] font-mono text-sky-600 uppercase tracking-widest font-bold">Medical Personnel</p>
+                        <div className="absolute right-0 top-full mt-2 w-64 skeuo-card p-2 z-50 overflow-hidden text-slate-700">
+                          <div className="px-4 py-3 rounded-xl skeuo-inset mb-2">
+                            <p className="text-[10px] font-mono text-sky-700 uppercase tracking-widest font-bold">Medical Personnel</p>
                             <p className="text-sm font-bold text-slate-900 truncate mt-0.5">{user?.email}</p>
                           </div>
                           <div className="py-1">
                             <Link
                               to={ROLE_DASHBOARD[role]}
                               onClick={() => setShowUserMenu(false)}
-                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-sky-100/70 hover:text-sky-800 rounded-xl transition-colors"
                             >
                               <UserCircle2 className="h-4 w-4 text-sky-600" />
                               Clinical Dashboard
                             </Link>
                           </div>
-                          <div className="py-1 border-t border-slate-100">
+                          <div className="py-1 border-t border-slate-200 mt-1">
                             <button
                               onClick={handleSignOut}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-100/60 rounded-xl transition-colors cursor-pointer"
                             >
                               <LogOut className="h-4 w-4" />
                               Sign Out Command
@@ -387,19 +388,19 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   </div>
                 </>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Link
                     to="/login"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-sm font-semibold transition-all shadow-xs"
+                    className="skeuo-btn skeuo-btn-secondary px-4 py-2 text-sm font-bold text-slate-700 hover:text-sky-700"
                   >
-                    <LogIn className="h-4 w-4 text-slate-500" />
+                    <LogIn className="h-4 w-4 mr-1.5 text-slate-500" />
                     Sign In
                   </Link>
                   <Link
                     to="/register"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-white text-sm font-bold hover:shadow-md hover:shadow-sky-500/25 transition-all shadow-xs"
+                    className="skeuo-btn skeuo-btn-primary px-4 py-2 text-sm font-bold"
                   >
-                    <UserCircle2 className="h-4 w-4" />
+                    <UserCircle2 className="h-4 w-4 mr-1.5" />
                     Sign Up Free
                   </Link>
                 </div>
@@ -410,7 +411,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <div className="flex md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 focus:outline-none"
+                className="skeuo-btn skeuo-btn-secondary p-2.5 text-slate-600 hover:text-slate-900"
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

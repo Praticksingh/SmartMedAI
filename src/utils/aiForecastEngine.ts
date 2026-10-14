@@ -5,6 +5,7 @@
  * confidence scores, and dynamic hospital clinic load balancing recommendations.
  */
 
+import { readDB, writeDB, logEvent } from "./mockState";
 import type { DepartmentData, PatientVisit } from "./mockState";
 import { getQueuePosition } from "./queueEngine";
 
@@ -130,4 +131,102 @@ export const calculateHospitalLoadBalancing = (
   }
 
   return recommendations;
+};
+
+/**
+ * Executes an actual patient queue diversion in the database
+ * Moves N lowest-priority / routine tokens from source clinic to target clinic
+ */
+export const applyQueueDiversion = (
+  sourceDeptCode: string,
+  targetDeptCode: string,
+  count: number = 2,
+  actor: string = "AI Load Balancer"
+): { success: boolean; divertedTokens: string[]; message: string } => {
+  const db = readDB();
+  const sourceDept = db.departments.find(d => d.code === sourceDeptCode);
+  const targetDept = db.departments.find(d => d.code === targetDeptCode);
+
+  if (!sourceDept || !targetDept) {
+    return { success: false, divertedTokens: [], message: "Invalid source or target department." };
+  }
+
+  if (sourceDept.nextTokens.length === 0) {
+    return { success: false, divertedTokens: [], message: `${sourceDept.name} has no waiting patients to divert.` };
+  }
+
+  // If source and target are the same (e.g. fast-track counter or staff boost)
+  if (sourceDeptCode === targetDeptCode) {
+    sourceDept.maxCapacity += 1;
+    sourceDept.currentCapacity = Math.min(sourceDept.maxCapacity, sourceDept.currentCapacity + 1);
+    sourceDept.wait = `${Math.max(2, Math.round(sourceDept.waiting * (6.5 / Math.max(1, sourceDept.currentCapacity))))} min`;
+    logEvent(actor, "CLINIC_CAPACITY_EXPANDED", `Expanded active consultation counters in ${sourceDept.name} (Max: ${sourceDept.maxCapacity}).`);
+    writeDB(db);
+    return {
+      success: true,
+      divertedTokens: [],
+      message: `Opened additional consultation capacity for ${sourceDept.name}. Capacity increased to ${sourceDept.maxCapacity} rooms.`
+    };
+  }
+
+  // Pick up to 'count' tokens to divert (favoring routine P4/P3 tokens from end of queue)
+  const availableTokens = [...sourceDept.nextTokens];
+  const divertedTokens: string[] = [];
+
+  // Sort candidate tokens: prefer P4 or P3 if visit record exists
+  const tokenPriorityMap = new Map<string, string>();
+  db.activeVisits.forEach(v => tokenPriorityMap.set(v.tokenNumber, v.priority));
+
+  const sortedCandidates = [...availableTokens].sort((a, b) => {
+    const prioA = tokenPriorityMap.get(a) || "p4";
+    const prioB = tokenPriorityMap.get(b) || "p4";
+    const rank: Record<string, number> = { p4: 4, p3: 3, p2: 2, p1: 1 };
+    return (rank[prioB] || 0) - (rank[prioA] || 0);
+  });
+
+  const selectedForDiversion = sortedCandidates.slice(0, Math.min(count, availableTokens.length));
+
+  if (selectedForDiversion.length === 0) {
+    return { success: false, divertedTokens: [], message: "No eligible tokens found for diversion." };
+  }
+
+  // Remove from source and append to target
+  sourceDept.nextTokens = sourceDept.nextTokens.filter(t => !selectedForDiversion.includes(t));
+  sourceDept.waiting = sourceDept.nextTokens.length;
+  sourceDept.wait = `${Math.max(0, Math.round(sourceDept.waiting * (6.5 / Math.max(1, sourceDept.currentCapacity || 1))))} min`;
+
+  targetDept.nextTokens = [...targetDept.nextTokens, ...selectedForDiversion];
+  targetDept.waiting = targetDept.nextTokens.length;
+  targetDept.wait = `${Math.max(0, Math.round(targetDept.waiting * (6.5 / Math.max(1, targetDept.currentCapacity || 1))))} min`;
+
+  // Update visit records
+  db.activeVisits = db.activeVisits.map(v => {
+    if (selectedForDiversion.includes(v.tokenNumber)) {
+      divertedTokens.push(v.tokenNumber);
+      return {
+        ...v,
+        departmentCode: targetDeptCode
+      };
+    }
+    return v;
+  });
+
+  // Ensure any token not in activeVisits is still recorded in divertedTokens list
+  selectedForDiversion.forEach(t => {
+    if (!divertedTokens.includes(t)) divertedTokens.push(t);
+  });
+
+  logEvent(
+    actor,
+    "AI_LOAD_BALANCING_DIVERSION",
+    `AI load balanced ${divertedTokens.length} visit(s) [${divertedTokens.join(", ")}] from ${sourceDept.name} to ${targetDept.name}.`
+  );
+
+  writeDB(db);
+
+  return {
+    success: true,
+    divertedTokens,
+    message: `Successfully redirected ${divertedTokens.length} patient token(s) (${divertedTokens.join(", ")}) from ${sourceDept.name} to ${targetDept.name}.`
+  };
 };

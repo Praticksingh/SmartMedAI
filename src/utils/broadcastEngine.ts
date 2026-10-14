@@ -146,13 +146,13 @@ export const subscribeToTVBroadcast = (
 };
 
 /**
- * Speaks medical call announcement in English or Hindi phonetics
+ * Speaks medical call announcement in English, Hindi, or Bengali phonetics
  */
 export const speakMedicalCall = (
   tokenNumber: string,
   deptName: string,
   room: string,
-  language: "EN" | "HI" = "EN",
+  language: "EN" | "HI" | "BN" = "EN",
   rate: number = 0.9
 ) => {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -166,6 +166,8 @@ export const speakMedicalCall = (
 
   if (language === "HI") {
     speechText = `Kripya dhyan dein. Token number ${spacedToken}, kripya ${deptName} clinic, ${room} mein jaayein.`;
+  } else if (language === "BN") {
+    speechText = `Anugraha kore shunun. Token number ${spacedToken}, doya kore ${deptName} clinic, ${room} e jaan.`;
   } else {
     speechText = `Attention please. Token number ${spacedToken}, please proceed to ${deptName} clinic, ${room}.`;
   }
@@ -176,9 +178,24 @@ export const speakMedicalCall = (
   
   if (language === "HI") {
     utterance.lang = "hi-IN";
+  } else if (language === "BN") {
+    utterance.lang = "bn-IN";
   } else {
     utterance.lang = "en-IN";
   }
 
   window.speechSynthesis.speak(utterance);
+};
+
+/**
+ * Unlocks the browser SpeechSynthesis AudioContext upon user gesture
+ */
+export const unlockKioskAudio = () => {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    const silentUtterance = new SpeechSynthesisUtterance("Audio broadcast online");
+    silentUtterance.volume = 0.6;
+    silentUtterance.rate = 1.4;
+    window.speechSynthesis.speak(silentUtterance);
+  } catch {}
 };

@@ -10,18 +10,19 @@ export const Badge: React.FC<BadgeProps> = ({
   variant = "neutral",
   ...props
 }) => {
-  const baseStyles = "inline-flex items-center px-3 py-1 text-xs font-mono font-bold rounded-full border tracking-wider uppercase shadow-xs";
+  const baseStyles =
+    "inline-flex items-center px-3 py-1 text-xs font-mono font-bold rounded-lg border tracking-wider uppercase transition-all duration-150 shadow-[2px_2px_5px_#cad4e2,-2px_-2px_5px_#ffffff,inset_0_1px_1px_rgba(255,255,255,0.9)]";
 
   const variants = {
-    primary: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-glow-cyan",
-    secondary: "bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-glow-teal",
-    neutral: "bg-slate-800/80 text-slate-300 border-slate-700",
-    p1: "bg-rose-500/25 text-rose-300 border-rose-500/50 shadow-glow-rose font-black",
-    p2: "bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-glow-amber font-bold",
-    p3: "bg-yellow-500/20 text-yellow-300 border-yellow-500/40 font-semibold",
-    p4: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-semibold",
-    success: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold",
-    info: "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold",
+    primary: "bg-sky-50 text-sky-800 border-sky-300/80 shadow-[0_0_8px_rgba(14,165,233,0.25)]",
+    secondary: "bg-teal-50 text-teal-800 border-teal-300/80 shadow-[0_0_8px_rgba(20,184,166,0.25)]",
+    neutral: "bg-slate-100 text-slate-700 border-slate-300/90",
+    p1: "bg-rose-50 text-rose-700 border-rose-300 font-black shadow-[0_0_10px_rgba(244,63,94,0.3)]",
+    p2: "bg-amber-50 text-amber-800 border-amber-300 font-bold shadow-[0_0_8px_rgba(245,158,11,0.25)]",
+    p3: "bg-yellow-50 text-yellow-800 border-yellow-300 font-semibold",
+    p4: "bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold",
+    success: "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold",
+    info: "bg-sky-50 text-sky-800 border-sky-300 font-bold",
   };
 
   return (
@@ -30,3 +31,4 @@ export const Badge: React.FC<BadgeProps> = ({
     </span>
   );
 };
+

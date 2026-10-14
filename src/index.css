@@ -6,102 +6,298 @@
 
 @layer base {
   body {
-    @apply bg-[#F8FAFC] text-slate-800 font-sans antialiased min-h-screen selection:bg-sky-500/20 selection:text-sky-900;
+    background-color: #ebf0f7;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.85) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(195, 207, 224, 0.4) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.4) 0px, transparent 100%);
+    @apply text-slate-800 font-sans antialiased min-h-screen selection:bg-sky-500/20 selection:text-sky-900;
   }
   
   :focus-visible {
-    @apply outline-none ring-2 ring-sky-500 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-sky-500 ring-offset-2 ring-offset-[#ebf0f7];
   }
 }
 
-/* SmartMed AI Radiant Modern Healthcare Card & Panel Utilities */
-.med-panel {
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
-}
+/* ==========================================================================
+   SMARTMED AI SKEUOMORPHIC MEDICAL HARDWARE DESIGN SYSTEM
+   Tactile depth, dual-source lighting, beveled polymers, brushed bezels & LEDs
+   ========================================================================== */
 
-.med-panel-highlight {
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  border: 1.5px solid rgba(16, 185, 129, 0.4);
-  border-radius: 1rem;
-  box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-}
-
-.med-card {
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+/* Skeuomorphic Elevated Plate / Card */
+.skeuo-card, .med-card {
+  background: linear-gradient(145deg, #ffffff 0%, #edf2f8 100%);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    7px 7px 18px #cad5e2,
+    -7px -7px 18px #ffffff,
+    inset 1px 1px 1px rgba(255, 255, 255, 0.95),
+    inset -1px -1px 2px rgba(180, 195, 215, 0.25);
+  position: relative;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.med-card:hover {
-  border-color: rgba(14, 165, 233, 0.35);
-  box-shadow: 0 12px 30px -6px rgba(14, 165, 233, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+.skeuo-card-hover:hover, .med-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    9px 9px 24px #bfcbd9,
+    -9px -9px 24px #ffffff,
+    inset 1px 1px 1px rgba(255, 255, 255, 1);
 }
 
-.med-card-glowing {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-  border: 1.5px solid rgba(56, 189, 248, 0.5);
+/* Skeuomorphic Highlight Card (Clinical Green Accented) */
+.med-panel-highlight, .skeuo-card-highlight {
+  background: linear-gradient(145deg, #f8fdfa 0%, #e6f6ee 100%);
   border-radius: 1.25rem;
-  box-shadow: 0 12px 35px -8px rgba(14, 165, 233, 0.18), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+  border: 1.5px solid rgba(52, 211, 153, 0.6);
+  box-shadow: 
+    7px 7px 20px #cad5e2,
+    -7px -7px 20px #ffffff,
+    inset 1px 1px 2px rgba(255, 255, 255, 0.9),
+    inset 0 0 16px rgba(16, 185, 129, 0.08);
 }
 
-.med-card-amber {
-  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
-  border: 1.5px solid rgba(245, 158, 11, 0.35);
+/* Skeuomorphic Glowing Card (Clinical Sky/Cyan) */
+.med-card-glowing, .skeuo-card-cyan {
+  background: linear-gradient(145deg, #f8fbff 0%, #e6f2fc 100%);
+  border-radius: 1.25rem;
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  box-shadow: 
+    7px 7px 20px #cad5e2,
+    -7px -7px 20px #ffffff,
+    inset 1px 1px 2px rgba(255, 255, 255, 0.95),
+    inset 0 0 16px rgba(14, 165, 233, 0.1);
+}
+
+/* Skeuomorphic Amber Alert Card */
+.med-card-amber, .skeuo-card-amber {
+  background: linear-gradient(145deg, #fffdf7 0%, #fbf3dc 100%);
+  border-radius: 1.25rem;
+  border: 1.5px solid rgba(251, 191, 36, 0.7);
+  box-shadow: 
+    7px 7px 18px #cad5e2,
+    -7px -7px 18px #ffffff,
+    inset 1px 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+/* Skeuomorphic Emergency Red / Rose Card */
+.med-card-rose, .skeuo-card-rose {
+  background: linear-gradient(145deg, #fff8f8 0%, #fde8ea 100%);
+  border-radius: 1.25rem;
+  border: 1.5px solid rgba(244, 63, 94, 0.6);
+  box-shadow: 
+    7px 7px 18px #cad5e2,
+    -7px -7px 18px #ffffff,
+    inset 1px 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+/* Skeuomorphic Debossed / Inset Well (Sunken Chassis) */
+.skeuo-inset, .skeuo-well {
+  background: #e2eaf4;
   border-radius: 1rem;
-  box-shadow: 0 8px 25px -5px rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(195, 207, 224, 0.85);
+  box-shadow: 
+    inset 3px 3px 7px #cad4e2,
+    inset -3px -3px 7px #ffffff,
+    0 1px 1px rgba(255, 255, 255, 0.9);
 }
 
-.med-card-rose {
-  background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
-  border: 1.5px solid rgba(244, 63, 94, 0.35);
+/* Skeuomorphic Console Panel */
+.med-panel, .skeuo-panel {
+  background: linear-gradient(180deg, #fbfcfe 0%, #edf2f8 100%);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    8px 8px 20px #cad5e2,
+    -8px -8px 20px #ffffff,
+    inset 1px 1px 1px #ffffff;
+}
+
+/* Medical Telemetry LCD / Glass Monitor Screen */
+.skeuo-screen, .skeuo-lcd {
+  background: radial-gradient(circle at 50% 15%, #132238 0%, #070e1a 100%);
   border-radius: 1rem;
-  box-shadow: 0 8px 25px -5px rgba(244, 63, 94, 0.12);
+  border: 3px solid #1e293b;
+  box-shadow: 
+    inset 0 3px 8px rgba(0, 0, 0, 0.85),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.15),
+    0 5px 15px rgba(15, 23, 42, 0.2),
+    0 1px 1px rgba(255, 255, 255, 0.9);
+  position: relative;
+  overflow: hidden;
+  color: #38bdf8;
 }
 
+.skeuo-screen::before, .skeuo-lcd::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 80%, transparent 100%);
+  pointer-events: none;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  z-index: 1;
+}
+
+/* Glass panel */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    6px 6px 18px #cad5e2,
+    -6px -6px 18px #ffffff,
+    inset 1px 1px 1px #ffffff;
 }
 
 .dark-glass-panel {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(71, 85, 105, 0.6);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-/* Glassmorphism shadow */
-.shadow-glass {
-  box-shadow:
-    0 10px 30px -10px rgba(14, 165, 233, 0.12),
-    0 4px 12px -2px rgba(15, 23, 42, 0.05),
-    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+/* Hardware Status Indicator LEDs */
+.skeuo-led {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  display: inline-block;
+  position: relative;
+  border: 1.5px solid #94a3b8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
 }
 
-.shadow-glow-cyan {
-  box-shadow: 0 8px 25px -4px rgba(14, 165, 233, 0.25);
+.skeuo-led-green {
+  background: radial-gradient(circle at 35% 35%, #86efac 0%, #10b981 60%, #047857 100%);
+  border-color: #a7f3d0;
+  box-shadow: 
+    0 0 8px #10b981,
+    0 0 16px rgba(16, 185, 129, 0.45),
+    inset 0 1px 1px #ffffff;
 }
 
-.shadow-glow-teal {
-  box-shadow: 0 8px 25px -4px rgba(20, 184, 166, 0.25);
+.skeuo-led-amber {
+  background: radial-gradient(circle at 35% 35%, #fde047 0%, #f59e0b 60%, #b45309 100%);
+  border-color: #fde68a;
+  box-shadow: 
+    0 0 8px #f59e0b,
+    0 0 16px rgba(245, 158, 11, 0.45),
+    inset 0 1px 1px #ffffff;
 }
 
-.shadow-glow-rose {
-  box-shadow: 0 8px 25px -4px rgba(244, 63, 94, 0.22);
+.skeuo-led-red {
+  background: radial-gradient(circle at 35% 35%, #fda4af 0%, #f43f5e 60%, #9f1239 100%);
+  border-color: #fecdd3;
+  box-shadow: 
+    0 0 8px #f43f5e,
+    0 0 16px rgba(244, 63, 94, 0.5),
+    inset 0 1px 1px #ffffff;
 }
 
-.shadow-glow-amber {
-  box-shadow: 0 8px 25px -4px rgba(245, 158, 11, 0.22);
+.skeuo-led-cyan {
+  background: radial-gradient(circle at 35% 35%, #7dd3fc 0%, #0ea5e9 60%, #0369a1 100%);
+  border-color: #bae6fd;
+  box-shadow: 
+    0 0 8px #0ea5e9,
+    0 0 16px rgba(14, 165, 233, 0.5),
+    inset 0 1px 1px #ffffff;
 }
 
+/* Mechanical Hardware Rivet / Screw Head */
+.skeuo-rivet {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #f8fafc 0%, #cbd5e1 60%, #94a3b8 100%);
+  border: 1px solid #64748b;
+  box-shadow: 
+    inset 0 1px 1px #ffffff,
+    0 1px 1px rgba(0, 0, 0, 0.15);
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.skeuo-rivet::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  right: 20%;
+  height: 1.5px;
+  background: #475569;
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Skeuomorphic Tab Switch Track & Buttons */
+.skeuo-tab-track {
+  background: #e1e9f4;
+  border-radius: 1rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(195, 207, 224, 0.85);
+  box-shadow: 
+    inset 2px 2px 5px #cad4e2,
+    inset -2px -2px 5px #ffffff;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.skeuo-tab-btn {
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.15s ease-out;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skeuo-tab-btn-active {
+  background: linear-gradient(180deg, #ffffff 0%, #edf2f8 100%);
+  color: #0284c7;
+  border: 1px solid #ffffff;
+  box-shadow: 
+    3px 3px 8px #cad4e2,
+    -3px -3px 8px #ffffff,
+    inset 0 1px 1px #ffffff;
+}
+
+/* Skeuomorphic Paper OPD Pass Ticket */
+.skeuo-ticket {
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 80%, #f1f5f9 100%);
+  border-radius: 1.25rem;
+  border: 1px solid #cbd5e1;
+  box-shadow: 
+    6px 6px 18px #cad5e2,
+    -6px -6px 18px #ffffff,
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  position: relative;
+}
+
+/* Embossed & Engraved Typography */
+.skeuo-embossed-text {
+  color: #1e293b;
+  text-shadow: 0 1px 0 #ffffff;
+}
+
+.skeuo-engraved-text {
+  color: #475569;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Gradient accents */
 .text-gradient-cyan {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-sky-600 via-cyan-600 to-teal-600;
 }
@@ -129,6 +325,7 @@
   background-size: 200% 100%;
   animation: ecgScan 2s linear infinite;
 }
+
 
 /* Page transition animations */
 @keyframes fadeIn {
@@ -200,3 +397,140 @@
 .animate-spin-slow {
   animation: spin-slow 4s linear infinite;
 }
+
+/* Skeuomorphic Push Button Variants */
+.skeuo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border-radius: 0.875rem;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+  user-select: none;
+}
+
+.skeuo-btn:active:not(:disabled) {
+  transform: translateY(2px) scale(0.99);
+}
+
+.skeuo-btn-primary {
+  background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 65%, #0369a1 100%);
+  color: #ffffff;
+  border: 1px solid #0284c7;
+  border-top-color: #38bdf8;
+  border-bottom-color: #0c4a6e;
+  box-shadow: 
+    0 4px 10px rgba(2, 132, 199, 0.35),
+    4px 4px 8px #cad5e2,
+    -4px -4px 8px #ffffff,
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.skeuo-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 65%, #0284c7 100%);
+  box-shadow: 
+    0 6px 14px rgba(2, 132, 199, 0.45),
+    4px 4px 10px #cad5e2,
+    -4px -4px 10px #ffffff,
+    inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.skeuo-btn-primary:active:not(:disabled) {
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+  box-shadow: 
+    inset 0 3px 6px rgba(0, 0, 0, 0.4),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.skeuo-btn-secondary {
+  background: linear-gradient(180deg, #ffffff 0%, #edf3f9 65%, #dce5f1 100%);
+  color: #1e293b;
+  border: 1px solid #c4d1e0;
+  border-top-color: #ffffff;
+  border-bottom-color: #b0bfd3;
+  box-shadow: 
+    4px 4px 8px #cad5e2,
+    -4px -4px 8px #ffffff,
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.skeuo-btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 65%, #e4ecf7 100%);
+  box-shadow: 
+    5px 5px 12px #bfcbd9,
+    -5px -5px 12px #ffffff,
+    inset 0 1px 1px #ffffff;
+}
+
+.skeuo-btn-secondary:active:not(:disabled) {
+  background: linear-gradient(180deg, #dde6f2 0%, #edf3f9 100%);
+  box-shadow: 
+    inset 2px 2px 5px #cad5e2,
+    inset -2px -2px 5px #ffffff,
+    0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.skeuo-btn-danger {
+  background: linear-gradient(180deg, #f43f5e 0%, #e11d48 65%, #be123c 100%);
+  color: #ffffff;
+  border: 1px solid #e11d48;
+  border-top-color: #fb7185;
+  border-bottom-color: #881337;
+  box-shadow: 
+    0 4px 10px rgba(225, 29, 72, 0.35),
+    4px 4px 8px #cad5e2,
+    -4px -4px 8px #ffffff,
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.skeuo-btn-danger:active:not(:disabled) {
+  background: linear-gradient(180deg, #e11d48 0%, #9f1239 100%);
+  box-shadow: 
+    inset 0 3px 6px rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.skeuo-btn-teal {
+  background: linear-gradient(180deg, #14b8a6 0%, #0d9488 65%, #0f766e 100%);
+  color: #ffffff;
+  border: 1px solid #0d9488;
+  border-top-color: #5eead4;
+  border-bottom-color: #115e59;
+  box-shadow: 
+    0 4px 10px rgba(13, 148, 136, 0.35),
+    4px 4px 8px #cad5e2,
+    -4px -4px 8px #ffffff,
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Skeuomorphic Debossed Sunken Input */
+.skeuo-input {
+  background: #e5edf6;
+  border-radius: 0.875rem;
+  border: 1px solid #c2cfdf;
+  box-shadow: 
+    inset 2px 2px 5px #cad4e2,
+    inset -2px -2px 5px #ffffff,
+    0 1px 1px rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.skeuo-input:focus {
+  background: #ecf2f9;
+  border-color: #0ea5e9;
+  box-shadow: 
+    inset 1px 1px 3px #cad4e2,
+    0 0 0 3px rgba(14, 165, 233, 0.25),
+    0 1px 1px #ffffff;
+  outline: none;
+}
+

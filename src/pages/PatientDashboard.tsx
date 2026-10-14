@@ -30,6 +30,7 @@ import { getActivePharmacyOrders, getActiveLabOrders } from "../utils/pharmacyLa
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "../components/ui/LanguageSwitcher";
+import { TelehealthModal } from "../components/ui/TelehealthModal";
 
 export const PatientDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export const PatientDashboard: React.FC = () => {
   const { t } = useLanguage();
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [editFullName, setEditFullName] = useState("");
   const [editDob, setEditDob] = useState("");
   const [editGender, setEditGender] = useState("");
@@ -156,36 +158,40 @@ export const PatientDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-300 text-slate-800">
       
-      {/* Header and User greeting */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-lg border border-slate-200/80 shadow-premium">
+      {/* Header and User greeting - Skeuomorphic Raised Plate */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 skeuo-card p-6 relative">
+        <span className="skeuo-rivet absolute top-3 left-3" />
+        <span className="skeuo-rivet absolute top-3 right-3" />
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-600 uppercase tracking-wider">{t("patient.hubTitle")}</span>
-            <Badge variant="neutral">Phase 15 · Pharmacy & Lab Routing</Badge>
+            <span className="text-sm font-bold text-sky-800 uppercase tracking-wider font-mono skeuo-engraved-text">{t("patient.hubTitle")}</span>
+            <span className="px-2.5 py-0.5 rounded-lg bg-sky-100 border border-sky-300 text-sky-800 font-mono text-xs font-bold shadow-xs">
+              Phase 15 · Pharmacy & Lab Routing
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800 mt-1">
+          <h1 className="text-2xl font-black text-slate-900 mt-1 skeuo-embossed-text">
             {t("patient.greeting")}, {patientName}
           </h1>
-          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 mt-1 font-medium">
             {profile?.gender ? (
-              <span className="font-medium text-slate-700">{profile.gender} · </span>
+              <span className="font-bold text-slate-700">{profile.gender} · </span>
             ) : null}
             {profile?.dateOfBirth ? (
-              <span>DOB: <strong className="text-slate-700">{profile.dateOfBirth}</strong> · </span>
+              <span>DOB: <strong className="text-slate-800 font-bold">{profile.dateOfBirth}</strong> · </span>
             ) : (
-              <span className="text-amber-600 font-semibold">DOB: Not provided · </span>
+              <span className="text-amber-700 font-bold">DOB: Not provided · </span>
             )}
             {profile?.phone ? (
-              <span>Mobile: <strong className="text-slate-700">{profile.phone}</strong></span>
+              <span>Mobile: <strong className="text-slate-800 font-bold">{profile.phone}</strong></span>
             ) : (
-              <span className="text-amber-600 font-semibold">Mobile: Not provided</span>
+              <span className="text-amber-700 font-bold">Mobile: Not provided</span>
             )}
             <button
               type="button"
               onClick={() => setIsEditProfileOpen(true)}
-              className="text-teal-600 hover:text-teal-800 font-bold underline ml-1.5 cursor-pointer"
+              className="text-sky-700 hover:text-sky-900 font-bold underline ml-1.5 cursor-pointer"
             >
               (Edit / Add)
             </button>
@@ -194,9 +200,9 @@ export const PatientDashboard: React.FC = () => {
         
         <div className="flex flex-wrap items-center gap-3">
           {/* Header Language Control */}
-          <div className="flex items-center gap-2 bg-teal-50/70 border border-teal-200/80 p-2 rounded-xl">
+          <div className="flex items-center gap-2 skeuo-inset p-2 rounded-xl">
             <LanguageSwitcher />
-            <span className="text-[11px] font-medium text-teal-800 hidden md:inline">
+            <span className="text-[11px] font-bold text-slate-700 hidden md:inline">
               {t("lang.helperMessage")}
             </span>
           </div>
@@ -204,9 +210,9 @@ export const PatientDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsEditProfileOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-teal-700 font-semibold bg-teal-50 hover:bg-teal-100 active:bg-teal-200 px-3 py-1.5 rounded-full border border-teal-200 shadow-sm transition-colors cursor-pointer"
+            className="skeuo-btn skeuo-btn-secondary px-3.5 py-2 text-xs font-bold text-slate-800 flex items-center gap-1.5 cursor-pointer"
           >
-            <Edit3 className="h-3.5 w-3.5 text-teal-600" />
+            <Edit3 className="h-3.5 w-3.5 text-sky-600" />
             <span>Edit Profile</span>
           </button>
         </div>
@@ -214,14 +220,14 @@ export const PatientDashboard: React.FC = () => {
 
       {/* Incomplete profile prompt banner */}
       {(!profile?.dateOfBirth || !profile?.phone || !profile?.gender) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200">
+        <div className="skeuo-card-amber p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-200">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 font-bold shadow-xs">
               <AlertCircle className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-amber-900">Incomplete Patient Demographics</h4>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <h4 className="text-sm font-black text-amber-950 uppercase tracking-tight">Incomplete Patient Demographics</h4>
+              <p className="text-xs text-amber-900 mt-0.5 font-medium">
                 Please add your Date of Birth and Mobile Number so clinical staff and OPD queue engines can properly prioritize your care.
               </p>
             </div>
@@ -229,7 +235,7 @@ export const PatientDashboard: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setIsEditProfileOpen(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white shrink-0 cursor-pointer"
+            className="skeuo-btn skeuo-btn-primary bg-amber-600 border-amber-700 text-white shrink-0 cursor-pointer"
           >
             Add DOB & Mobile
           </Button>
@@ -244,32 +250,33 @@ export const PatientDashboard: React.FC = () => {
         
         {/* Left/Middle Column: Primary Call To Action */}
         <div className="md:col-span-2 space-y-6">
-          <Card className="border-teal-100 bg-gradient-to-br from-white to-teal-50/10">
+          <Card hoverLift rivets className="border border-white/95">
             <CardHeader>
-              <div className="h-12 w-12 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 mb-2">
-                <ClipboardPlus className="h-7 w-7" />
+              <div className="h-12 w-12 rounded-xl skeuo-btn-primary flex items-center justify-center text-white mb-2 shadow-md">
+                <ClipboardPlus className="h-6 w-6" />
               </div>
-              <CardTitle className="text-xl">{t("patient.symptomTitle")}</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl skeuo-embossed-text">{t("patient.symptomTitle")}</CardTitle>
+              <CardDescription className="text-slate-600 font-medium">
                 {t("patient.symptomDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-500 space-y-2">
-                <div className="flex gap-2 text-amber-700 font-semibold">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
+              <div className="p-4 skeuo-inset text-xs text-slate-600 space-y-2">
+                <div className="flex gap-2 text-amber-800 font-bold">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
                   <span>{t("patient.disclaimerTitle")}</span>
                 </div>
-                <p>
+                <p className="font-medium leading-relaxed">
                   {t("patient.disclaimerDesc")}
                 </p>
               </div>
             </CardContent>
             <CardFooter>
               <Button 
+                variant="primary"
                 onClick={() => navigate("/triage")} 
                 disabled={!!activeVisit}
-                className="w-full sm:w-auto shadow-md"
+                className="w-full sm:w-auto py-3 text-sm"
               >
                 <Stethoscope className="h-4 w-4 mr-1.5" />
                 <span>{t("patient.startAssessment")}</span>
@@ -280,8 +287,9 @@ export const PatientDashboard: React.FC = () => {
 
           {/* Previous Visits Table */}
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
-              <FileClock className="h-5 w-5 text-teal-600" />
+            <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 skeuo-embossed-text">
+              <span className="skeuo-led skeuo-led-cyan" />
+              <FileClock className="h-5 w-5 text-sky-600" />
               <span>{t("patient.previousVisits")}</span>
             </h2>
             
@@ -289,17 +297,17 @@ export const PatientDashboard: React.FC = () => {
               {allVisits.map((visit) => (
                 <div 
                   key={visit.id} 
-                  className="bg-white border border-slate-200/80 rounded-md p-4 flex justify-between items-center text-sm shadow-sm"
+                  className="skeuo-inset p-4 flex justify-between items-center text-sm"
                 >
                   <div className="space-y-1">
-                    <span className="block font-semibold text-slate-800">{visit.department}</span>
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <span className="block font-bold text-slate-900">{visit.department}</span>
+                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
                       <Clock className="h-3 w-3" /> {visit.date}
                     </span>
                   </div>
                   <div className="text-right space-y-1">
                     <Badge variant="success">{visit.status}</Badge>
-                    <span className="block text-xs text-slate-400 font-mono">Token: {visit.token}</span>
+                    <span className="block text-xs text-slate-500 font-mono font-bold">Token: {visit.token}</span>
                   </div>
                 </div>
               ))}
@@ -309,19 +317,22 @@ export const PatientDashboard: React.FC = () => {
 
         {/* Right Column: Active Visit / Token Ticket (Connected to useMockDB) */}
         <div>
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-4 flex items-center gap-2">
-            <Ticket className="h-5 w-5 text-slate-400" />
+          <h2 className="text-lg font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2 skeuo-embossed-text">
+            <Ticket className="h-5 w-5 text-sky-600" />
             <span>{t("patient.activeTokenStatus")}</span>
           </h2>
 
           {activeVisit ? (
-            /* High Fidelity OPD Ticket Card */
-            <Card className="border-teal-200 border-2 overflow-hidden shadow-lg p-0 relative bg-white">
-              {/* Ticket header */}
-              <div className="bg-teal-700 text-white px-5 py-4 flex justify-between items-center">
+            /* High Fidelity Skeuomorphic OPD Ticket Card */
+            <div className="skeuo-card overflow-hidden p-0 relative border border-white/95">
+              <span className="skeuo-rivet absolute top-3 left-3 z-20" />
+              <span className="skeuo-rivet absolute top-3 right-3 z-20" />
+
+              {/* Ticket header - Metallic / Console strip */}
+              <div className="bg-gradient-to-r from-sky-700 via-blue-700 to-teal-700 text-white px-6 py-4 flex justify-between items-center shadow-md border-b border-sky-600">
                 <div>
-                  <span className="text-[10px] font-bold tracking-wider uppercase text-teal-200">{t("patient.opdTicket")}</span>
-                  <h4 className="font-extrabold text-sm uppercase mt-0.5 tracking-tight">{activeDept?.name || activeVisit.departmentCode}</h4>
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-sky-200 block font-mono">{t("patient.opdTicket")}</span>
+                  <h4 className="font-black text-sm uppercase mt-0.5 tracking-tight text-white">{activeDept?.name || activeVisit.departmentCode}</h4>
                 </div>
                 <Badge variant={activeVisit.priority}>{activeVisit.priorityText}</Badge>
               </div>
@@ -329,34 +340,35 @@ export const PatientDashboard: React.FC = () => {
               {/* Ticket body */}
               <div className="p-5 text-center space-y-4">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{t("patient.yourTokenNumber")}</span>
-                  <span className="text-5xl font-black text-slate-800 font-mono tracking-tight block">{activeVisit.tokenNumber}</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-mono skeuo-engraved-text">{t("patient.yourTokenNumber")}</span>
+                  <span className="text-5xl font-black text-slate-900 font-mono tracking-tight block skeuo-embossed-text">{activeVisit.tokenNumber}</span>
                 </div>
 
                 {/* Queue Position Pill */}
                 {queuePos > 0 ? (
                   <div className="space-y-2">
-                    <div className="bg-teal-50 border border-teal-200 rounded-lg py-2 px-3 flex items-center justify-center gap-2 text-teal-800 text-xs font-bold shadow-xs">
-                      <Users className="h-4 w-4 text-teal-600" />
+                    <div className="skeuo-inset py-2.5 px-3 flex items-center justify-center gap-2 text-sky-900 text-xs font-bold">
+                      <Users className="h-4 w-4 text-sky-600" />
                       <span>{t("patient.queuePosition")}: #{queuePos} ({queuePos - 1} {t("patient.ahead")})</span>
                     </div>
 
-                    {/* AI Predictive Forecast Card */}
+                    {/* AI Predictive Forecast Card - Skeuomorphic LCD Display */}
                     {(() => {
                       const forecast = predictPatientWaitTime(activeVisit.tokenNumber, activeVisit.departmentCode, db.activeVisits, db.departments);
                       return (
-                        <div className="bg-indigo-900 text-white rounded-xl p-3 text-left space-y-1 shadow-sm">
-                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-                            <span className="flex items-center gap-1">
-                              <Sparkles className="h-3 w-3 text-amber-400" /> AI Wait Forecast
+                        <div className="skeuo-screen p-3.5 text-left space-y-1 text-sky-300">
+                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-sky-400 relative z-10">
+                            <span className="flex items-center gap-1.5 font-mono">
+                              <span className="skeuo-led skeuo-led-cyan animate-pulse" />
+                              <Sparkles className="h-3 w-3 text-sky-300" /> AI Wait Forecast
                             </span>
-                            <span className="bg-indigo-800 px-1.5 py-0.5 rounded text-teal-300 font-mono">
+                            <span className="bg-sky-950/80 border border-sky-500/40 px-2 py-0.5 rounded-lg text-emerald-300 font-mono text-[10px]">
                               {forecast.confidenceScore}% Accuracy
                             </span>
                           </div>
-                          <div className="flex justify-between items-center font-extrabold text-sm pt-0.5">
-                            <span className="text-white">Predicted Call: {forecast.predictedTurnTime}</span>
-                            <span className="text-amber-300 text-xs font-semibold">~{forecast.estimatedWaitMinutes} mins</span>
+                          <div className="flex justify-between items-center font-black text-sm pt-0.5 relative z-10">
+                            <span className="text-white font-mono">Predicted Call: {forecast.predictedTurnTime}</span>
+                            <span className="text-amber-300 text-xs font-mono font-bold">~{forecast.estimatedWaitMinutes} mins</span>
                           </div>
                         </div>
                       );
@@ -364,23 +376,20 @@ export const PatientDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg py-2 px-3 text-indigo-800 text-xs font-bold">
-                      {t("patient.currentlyCalled")}
+                    <div className="skeuo-card-highlight p-3 text-emerald-900 text-xs font-bold flex items-center justify-center gap-2">
+                      <span className="skeuo-led skeuo-led-green animate-pulse" />
+                      <span>{t("patient.currentlyCalled")}</span>
                     </div>
                     {/* Tele-Health Video Call Button */}
-                    {(() => {
-                      const room = generateVirtualRoomUrl(activeVisit.tokenNumber, activeVisit.departmentCode);
-                      return (
-                        <Button
-                          size="sm"
-                          onClick={() => window.open(room.roomUrl, "_blank")}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          <Video className="h-4 w-4 text-amber-300" />
-                          <span>{t("patient.joinVideoCall")}</span>
-                        </Button>
-                      );
-                    })()}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setIsVideoModalOpen(true)}
+                      className="w-full text-xs font-bold"
+                    >
+                      <Video className="h-4 w-4 mr-1.5" />
+                      <span>{t("patient.joinVideoCall")}</span>
+                    </Button>
                   </div>
                 )}
 
@@ -444,7 +453,7 @@ export const PatientDashboard: React.FC = () => {
                   <span>{t("patient.cancelToken")}</span>
                 </button>
               </div>
-            </Card>
+            </div>
           ) : (
             <Card className="border-dashed border-2 border-slate-300 bg-slate-50/50 flex flex-col justify-center items-center py-12 text-center">
               <div className="h-16 w-16 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-4 animate-pulse">
@@ -628,6 +637,18 @@ export const PatientDashboard: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Patient Telehealth Video Call In-App Modal */}
+      {activeVisit && (
+        <TelehealthModal
+          isOpen={isVideoModalOpen}
+          onClose={() => setIsVideoModalOpen(false)}
+          tokenNumber={activeVisit.tokenNumber}
+          departmentCode={activeVisit.departmentCode}
+          roomUrl={generateVirtualRoomUrl(activeVisit.tokenNumber, activeVisit.departmentCode).roomUrl}
+          patientName={patientName}
+        />
       )}
 
     </div>
